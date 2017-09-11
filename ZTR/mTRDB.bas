@@ -2,16 +2,16 @@ Attribute VB_Name = "mTRDB"
 Option Explicit
 Sub Main()
 
-    Call SP_SETxVariable(mTRCS.tCS_TRDefUser, ACCESS, English, True)
+    Call SP_SETxVariable(tCS_TRDefUser, ACCESS, English, True)
     
-    If mTRVB.oVB_TRDbCon.State = adStateOpen Then
+    If oVB_TRDbCon.State = adStateOpen Then
     
         wTRMain.Show
     
     Else
         
-        Call SP_SHOWbMessage(mTRMS.tMS_0001, Critical)
-        Set mTRVB.oVB_TRDbCon = Nothing
+        Call SP_SHOWbMessage(tMS_0001, Critical)
+        Set oVB_TRDbCon = Nothing
         
     End If
     

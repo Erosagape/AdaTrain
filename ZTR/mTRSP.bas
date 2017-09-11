@@ -2,18 +2,18 @@ Attribute VB_Name = "mTRSP"
 Option Explicit
 Public Sub SP_SETxVariable(ptUser As String, poDbType As EN_TRDbType, poLang As EN_TRLang, pbTestMode As Boolean)
 
-    mTRVB.tVB_TRUser = ptUser
-    mTRVB.eVB_TRDbType = poDbType
-    mTRVB.eVB_TRLang = poLang
+    tVB_TRUser = ptUser
+    eVB_TRDbType = poDbType
+    eVB_TRLang = poLang
     
     If pbTestMode = True Then
-        Set mTRVB.oVB_TRDbCon = SP_DAToGetConnTEST()
+        Set oVB_TRDbCon = SP_GEToConnTEST()
     End If
     
-    mTRVB.oVB_TRDbCon.Open
+    oVB_TRDbCon.Open
     
 End Sub
-Public Function SP_DATtGetConnStr(ptUserID As String, ptPassword As String, ptServerName As String, ptDatabaseName As String) As String
+Public Function SP_GETtConnStr(ptUserID As String, ptPassword As String, ptServerName As String, ptDatabaseName As String) As String
     
     Dim tProvider As String
     Dim tUserID As String
@@ -27,11 +27,11 @@ Public Function SP_DATtGetConnStr(ptUserID As String, ptPassword As String, ptSe
     tServerName = ptServerName
     tDatabase = ptDatabaseName
     
-    If mTRVB.eVB_TRDbType = EN_TRDbType.SQLServer Then
+    If eVB_TRDbType = EN_TRDbType.SQLServer Then
     
-        tProvider = mTRCS.tCS_TRPrvSQL
+        tProvider = tCS_TRPrvSQL
         
-        tConnStr = mTRCS.tCS_TRConSQL
+        tConnStr = tCS_TRConSQL
         tConnStr = Replace(tConnStr, "{0}", tProvider)
         tConnStr = Replace(tConnStr, "{1}", tServerName)
         tConnStr = Replace(tConnStr, "{2}", tUserID)
@@ -40,11 +40,11 @@ Public Function SP_DATtGetConnStr(ptUserID As String, ptPassword As String, ptSe
         
     End If
     
-    If mTRVB.eVB_TRDbType = EN_TRDbType.ACCESS Then
-        tProvider = mTRCS.tCS_TRDbPrvMSAC
+    If eVB_TRDbType = EN_TRDbType.ACCESS Then
+        tProvider = tCS_TRDbPrvMSAC
         tServerName = App.Path & "\" & tDatabase & ".mdb"
         
-        tConnStr = mTRCS.tCS_TRConMSAC
+        tConnStr = tCS_TRConMSAC
         tConnStr = Replace(tConnStr, "{0}", tProvider)
         tConnStr = Replace(tConnStr, "{1}", tServerName)
         tConnStr = Replace(tConnStr, "{2}", "Admin")
@@ -52,142 +52,110 @@ Public Function SP_DATtGetConnStr(ptUserID As String, ptPassword As String, ptSe
             
     End If
             
-    SP_DATtGetConnStr = tConnStr
+    SP_GETtConnStr = tConnStr
     
 End Function
-Public Function SP_DAToGetConnTEST() As ADODB.Connection
-
+Public Function SP_GEToConnTEST() As ADODB.Connection
+    
+    On Error GoTo ErrHandle:
+    
     Dim oDbConn As New ADODB.Connection
     
-    oDbConn.ConnectionString = SP_DATtGetConnStr(mTRCS.tCS_TRDbUser, mTRCS.tCS_TRDbPwd, ".", mTRCS.tCS_TRDbName)
+    oDbConn.ConnectionString = SP_GETtConnStr(tCS_TRDbUser, tCS_TRDbPwd, ".", tCS_TRDbName)
     oDbConn.CursorLocation = adUseClient
     
-    Set SP_DAToGetConnTEST = oDbConn
+    Set SP_GEToConnTEST = oDbConn
+    
+    Exit Function
+    
+ErrHandle:
+
+    Set SP_GEToConnTEST = New ADODB.Connection
+    
+End Function
+Public Function SP_GEToData(poDbConn As ADODB.Connection, ptAliasName As String) As ADODB.Recordset
+Select Case ptAliasName
+Case "Cst"
+    Set SP_GEToData = SP_GEToTbl(poDbConn, tCS_TRSQLCst)
+Case "Pdt"
+    Set SP_GEToData = SP_GEToTbl(poDbConn, tCS_TRSQLPdt)
+Case "PdtGrp"
+    Set SP_GEToData = SP_GEToTbl(poDbConn, tCS_TRSQLPdtGrp)
+Case "Spn"
+    Set SP_GEToData = SP_GEToTbl(poDbConn, tCS_TRSQLSpn)
+Case Else
+    Set SP_GEToData = New ADODB.Recordset
+End Select
+End Function
+Public Function SP_GEToTbl(poDbConn As ADODB.Connection, ptSQL As String) As ADODB.Recordset
+    On Error GoTo ErrHandle:
+    
+    Dim oRs As New ADODB.Recordset
+    oRs.Open ptSQL, poDbConn, adOpenDynamic, adLockOptimistic
+    
+    Set SP_GEToTbl = oRs
+    Exit Function
+    
+ErrHandle:
+
+    Set SP_GEToTbl = New ADODB.Recordset
 
 End Function
-Public Function SP_TBLoGetFROMSQL(poDbConn As ADODB.Connection, ptSQL As String) As ADODB.Recordset
+Public Function SP_EXECoSQL(poDbConn As ADODB.Connection, ptSQL As String) As ADODB.Recordset
+    On Error GoTo ErrHandle:
+    
+    Set SP_EXECoSQL = poDbConn.Execute(ptSQL)
+    Exit Function
+    
+ErrHandle:
 
-    Dim oTable As New ADODB.Recordset
-    oTable.Open ptSQL, poDbConn, adOpenDynamic, adLockOptimistic
-    
-    Set SP_TBLoGetFROMSQL = oTable
-    
+    Set SP_EXECoSQL = Nothing
 End Function
-Public Function SP_GETtNewSalesPerson(poDbConn As ADODB.Connection) As String
-    
-    Dim oRs As ADODB.Recordset
-    Set oRs = poDbConn.Execute(mTRCS.tCS_TRSQLSpnNew)
-    
-    If oRs.EOF = False Then
-        SP_GETtNewSalesPerson = "E-" & Format(CInt(Right(oRs.Fields(0).Value, 4)) + 1, "0000")
-    Else
-        SP_GETtNewSalesPerson = "E-0001"
-    End If
-    
-    oRs.Close
-    
+Public Function SP_GETtNewID(poDbConn As ADODB.Connection, ptAliasName As String) As String
+Dim oRs As ADODB.Recordset
+Select Case ptAliasName
+    Case "Cst"
+        Set oRs = SP_EXECoSQL(poDbConn, tCS_TRSQLCstNew)
+        If oRs.EOF = False Then
+            SP_GETtNewID = "C-" & Format(CInt(Right(oRs.Fields(0).Value, 4)) + 1, "0000")
+        Else
+            SP_GETtNewID = "C-0001"
+        End If
+        oRs.Close
+    Case "Spn"
+        Set oRs = SP_EXECoSQL(poDbConn, tCS_TRSQLSpnNew)
+        If oRs.EOF = False Then
+            SP_GETtNewID = "E-" & Format(CInt(Right(oRs.Fields(0).Value, 4)) + 1, "0000")
+        Else
+            SP_GETtNewID = "E-0001"
+        End If
+        oRs.Close
+    Case "PdtGrp"
+        Set oRs = SP_EXECoSQL(poDbConn, tCS_TRSQLPdtGrpNew)
+        If oRs.EOF = False Then
+            SP_GETtNewID = Format(CInt(Right(oRs.Fields(0).Value, 4)) + 1, "000")
+        Else
+            SP_GETtNewID = "001"
+        End If
+        oRs.Close
+Case Else
+    SP_GETtNewID = ""
+End Select
 End Function
-Public Function SP_GETtNewCustomer(poDbConn As ADODB.Connection) As String
-    
-    Dim oRs As ADODB.Recordset
-    Set oRs = poDbConn.Execute(mTRCS.tCS_TRSQLCstNew)
-    
-    If oRs.EOF = False Then
-        SP_GETtNewCustomer = "C-" & Format(CInt(Right(oRs.Fields(0).Value, 4)) + 1, "0000")
-    Else
-        SP_GETtNewCustomer = "C-0001"
-    End If
-    
-    oRs.Close
-    
-End Function
-Public Function SP_GETtNewProductGroup(poDbConn As ADODB.Connection) As String
-    
-    Dim oRs As ADODB.Recordset
-    Set oRs = poDbConn.Execute(mTRCS.tCS_TRSQLPdtGrpNew)
-    
-    If oRs.EOF = False Then
-        SP_GETtNewProductGroup = Format(CInt(Right(oRs.Fields(0).Value, 4)) + 1, "000")
-    Else
-        SP_GETtNewProductGroup = "001"
-    End If
-    
-    oRs.Close
-    
-End Function
-
-Public Function SP_DATtGetInput(poForm As Form, ptCtlType As String, ptName As String) As String
+Public Function SP_GETtSQLDefVal(ptName As String) As String
     '//special case field
     Select Case ptName
     Case "FDDateIns", "FDDateUpd"
-        SP_DATtGetInput = SP_SQLtFormatText(Format(Now, "yyyy-MM-dd"), Date)
+        SP_GETtSQLDefVal = SP_GETtSQLFormat(Format(Now, "yyyy-MM-dd"), Date)
     Case "FTTimeIns", "FTTimeUpd"
-        SP_DATtGetInput = SP_SQLtFormatText(Format(Now, "HH:mm:ss"), Text)
+        SP_GETtSQLDefVal = SP_GETtSQLFormat(Format(Now, "HH:mm:ss"), Text)
     Case "FTWhoIns", "FTWhoUpd"
-        SP_DATtGetInput = SP_SQLtFormatText(mTRVB.tVB_TRUser, Text)
+        SP_GETtSQLDefVal = SP_GETtSQLFormat(tVB_TRUser, Text)
     Case Else
-        '//find control name
-            Dim oCtl As Control
-            Set oCtl = poForm.Controls(ptCtlType & ptName)
-            
-            Dim oType As EN_TRDataType
-            Dim tValue As String
-            oType = Text
-            tValue = ""
-            '//default value
-            Select Case Mid(ptName, 1, 2)
-            Case "FD"
-                tValue = "1900-01-01"
-                oType = Date
-            Case "FC"
-                tValue = "0.00"
-                oType = Float
-            Case "FN"
-                tValue = "0.00"
-                oType = Number
-            Case "FB"
-                tValue = "0"
-                oType = Bool
-            End Select
-            
-            '//find value base on control type
-            If Not oCtl Is Nothing Then
-                Select Case ptCtlType
-                Case "odt", "orb"
-                    tValue = oCtl.Value
-                Case "ocb"
-                    tValue = oCtl.BoundText
-                Case "ock"
-                    tValue = oCtl.Checked
-                Case Else
-                    tValue = oCtl.Text
-                End Select
-            End If
-            
-            SP_DATtGetInput = SP_SQLtFormatText(tValue, oType)
+        SP_GETtSQLDefVal = SP_GETtSQLFormat(Format(Now, "yyyy-MM-dd"), Date)
     End Select
 End Function
-Public Function SP_TBLoGetCustomer(poDbConn As ADODB.Connection) As ADODB.Recordset
-   
-    Set SP_TBLoGetCustomer = SP_TBLoGetFROMSQL(poDbConn, mTRCS.tCS_TRSQLCst)
-    
-End Function
-Public Function SP_TBLoGetProduct(poDbConn As ADODB.Connection) As ADODB.Recordset
-   
-    Set SP_TBLoGetProduct = SP_TBLoGetFROMSQL(poDbConn, mTRCS.tCS_TRSQLPdt)
-    
-End Function
-Public Function SP_TBLoGetProductGroup(poDbConn As ADODB.Connection) As ADODB.Recordset
-   
-    Set SP_TBLoGetProductGroup = SP_TBLoGetFROMSQL(poDbConn, mTRCS.tCS_TRSQLPdtGrp)
-    
-End Function
-Public Function SP_TBLoGetSalesPerson(poDbConn As ADODB.Connection) As ADODB.Recordset
-   
-    Set SP_TBLoGetSalesPerson = SP_TBLoGetFROMSQL(poDbConn, mTRCS.tCS_TRSQLSpn)
-    
-End Function
-Public Sub SP_SQLxSetLogTBL(poAction As EN_TRDbAction, ptTableName As String, ptWhere As String, poDbConn As ADODB.Connection)
+Public Sub SP_SETxLogTbl(poAction As EN_TRDbAction, ptTableName As String, ptWhere As String, poDbConn As ADODB.Connection)
 
     Dim tSql As String
     Dim tLogType As String
@@ -209,22 +177,22 @@ Public Sub SP_SQLxSetLogTBL(poAction As EN_TRDbAction, ptTableName As String, pt
         tSql = " Update " & ptTableName & " set "
         tSql = tSql & " FDDate" & tLogType & "={0}, "
         tSql = tSql & " FTTime" & tLogType & "={1}, "
-        tSql = tSql & " FTWho" & tLogType & "='" & mTRVB.tVB_TRUser & "'"
+        tSql = tSql & " FTWho" & tLogType & "='" & tVB_TRUser & "'"
         
         If tLogType = "Ins" Then
             tSql = tSql & " ,FDDateUpd={0}, "
             tSql = tSql & " FTTimeUpd={1}, "
-            tSql = tSql & " FTWhoUpd='" & mTRVB.tVB_TRUser & "'"
+            tSql = tSql & " FTWhoUpd='" & tVB_TRUser & "'"
         End If
         
-        If mTRVB.eVB_TRDbType = ACCESS Then
+        If eVB_TRDbType = ACCESS Then
         
                 tSql = Replace(tSql, "{0}", "Format(Now(),'yyyy-MM-dd')")
                 tSql = Replace(tSql, "{1}", "Format(Now(),'HH:mm:ss')")
                 
         End If
         
-        If mTRVB.eVB_TRDbType = SQLServer Then
+        If eVB_TRDbType = SQLServer Then
         
                 tSql = Replace(tSql, "{0}", "Convert(date,GetDate())")
                 tSql = Replace(tSql, "{1}", "Convert(time,GetDate())")
@@ -260,29 +228,29 @@ Public Function SP_SHOWbMessage(ptMsgCode As String, poMsgType As EN_TRMsgType) 
     Dim nLangIndex As Integer
     nLangIndex = 0
     
-    If mTRVB.eVB_TRLang = Thai Then
+    If eVB_TRLang = Thai Then
         nLangIndex = 1
     End If
     
-    If mTRVB.eVB_TRLang = English Then
+    If eVB_TRLang = English Then
         nLangIndex = 0
     End If
     
     Dim oMsgResult As VbMsgBoxResult
-    oMsgResult = MsgBox(Split(ptMsgCode, ";")(nLangIndex), oMsgStyle, mTRCS.tCS_TRPrjName)
+    oMsgResult = MsgBox(Split(ptMsgCode, ";")(nLangIndex), oMsgStyle, tCS_TRPrjName)
     
     SP_SHOWbMessage = IIf(oMsgResult = vbOK, True, False)
     
 End Function
 
-Public Sub SP_CTLxSetFocus(ByRef oCtl As Object)
+Public Sub SP_SETxCtlSelect(ByRef oCtl As Object)
     
     oCtl.SelStart = 0
     oCtl.SelLength = Len(oCtl.Text)
 
 End Sub
-Public Function SP_SQLbRunCommand(poDbConn As ADODB.Connection, ptSQLText As String) As Boolean
-On Error GoTo Err:
+Public Function SP_EXECbSQL(poDbConn As ADODB.Connection, ptSQLText As String) As Boolean
+On Error GoTo ErrHandle:
     
     Dim oCmd As New ADODB.Command
     
@@ -292,14 +260,14 @@ On Error GoTo Err:
                         
     oCmd.Execute
     
-    SP_SQLbRunCommand = True
+    SP_EXECbSQL = True
     Exit Function
     
-Err:
-    SP_SQLbRunCommand = False
+ErrHandle:
+    SP_EXECbSQL = False
     
 End Function
-Public Sub SP_CTLxSetDataCbo(poCbo As DataCombo, ptSQLStr As String, poDbConn As ADODB.Connection)
+Public Sub SP_SETxCtlDCbo(poCbo As DataCombo, ptSQLStr As String, poDbConn As ADODB.Connection)
     
     Dim oRs As ADODB.Recordset
     Set oRs = poDbConn.Execute(ptSQLStr)
@@ -310,12 +278,12 @@ Public Sub SP_CTLxSetDataCbo(poCbo As DataCombo, ptSQLStr As String, poDbConn As
     poCbo.DataField = oRs.Fields(0).Name
 
 End Sub
-Public Function SP_SQLtFormatText(ptValue As String, poDataType As EN_TRDataType) As String
-    On Error GoTo Err:
+Public Function SP_GETtSQLFormat(ptValue As String, poDataType As EN_TRDataType) As String
+    On Error GoTo ErrHandle:
     Dim tStr As String
     tStr = ptValue
     
-    If mTRVB.eVB_TRDbType = ACCESS Then
+    If eVB_TRDbType = ACCESS Then
            Select Case poDataType
            Case EN_TRDataType.Number
                     tStr = "CInt(" & ptValue & ")"
@@ -335,7 +303,7 @@ Public Function SP_SQLtFormatText(ptValue As String, poDataType As EN_TRDataType
 '    Float = 2
 '    Date = 3
 '    Bool = 4
-    If mTRVB.eVB_TRDbType = SQLServer Then
+    If eVB_TRDbType = SQLServer Then
            Select Case poDataType
            Case EN_TRDataType.Date
                     tStr = "Convert(date,'" & Format(CDate(ptValue), "yyyy-MM-dd") & "')"
@@ -346,9 +314,9 @@ Public Function SP_SQLtFormatText(ptValue As String, poDataType As EN_TRDataType
            End Select
     End If
     
-    SP_SQLtFormatText = tStr
+    SP_GETtSQLFormat = tStr
     
     Exit Function
-Err:
-    SP_SQLtFormatText = "NULL"
+ErrHandle:
+    SP_GETtSQLFormat = "NULL"
 End Function

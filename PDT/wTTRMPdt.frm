@@ -727,39 +727,6 @@ Private Function SP_TBLbSaveData() As Boolean
     
     Dim bSuccess As Boolean
     bSuccess = False
-    '//read structure
-    Dim oRec As ADODB.Recordset
-    Set oRec = oW_DbConn.Execute("SELECT * FROM TTRMPdt WHERE (1=0)")
-    
-    Dim nIdx As Integer
-    Dim tVal As String
-    Dim tSQLColName As String
-    Dim tSQLValue As String
-    Dim tSQLUpdate As String
-    '//Read data FROM form to SQL Command
-    For nIdx = 0 To oRec.Fields.Count - 1
-        
-        tVal = SP_SQLtGetValue(oRec.Fields(nIdx).Name)
-        
-        tSQLColName = tSQLColName & IIf(tSQLColName <> "", ",", "") & oRec.Fields(nIdx).Name
-        tSQLValue = tSQLValue & IIf(tSQLValue <> "", ",", "") & tVal
-        tSQLUpdate = tSQLUpdate & IIf(tSQLUpdate <> "", ",", "") & oRec.Fields(nIdx).Name & "=" & tVal
-
-    Next nIdx
-    oRec.Close
-    
-    '//Generate SQL Command
-    tSQLColName = "INSERT INTO TTRMPdt (" & tSQLColName & ") VALUES "
-    tSQLValue = "(" & tSQLValue & ")"
-    
-    tSQLUpdate = Replace("UPDATE TTRMPdt SET " & tSQLUpdate & " WHERE FTPdtCode=?", "=?", "='" & otbFTPdtCode.Text & "'")
-    
-    '//Try to insert first and then update if insert failed
-    If SP_SQLbRunCommand(oW_DbConn, tSQLColName & tSQLValue) = False Then
-        bSuccess = SP_SQLbRunCommand(oW_DbConn, tSQLUpdate)
-    Else
-        bSuccess = True
-    End If
     
     SP_TBLbSaveData = bSuccess
     
@@ -770,32 +737,6 @@ Err:
     SP_TBLbSaveData = False
     Call SP_SHOWbMessage(Err.Description, Critical)
     
-End Function
-Private Function SP_SQLtGetValue(ptFieldName As String) As String
-    Dim tValue As String
-    Dim bFound As Boolean
-    '//Special case field
-   Select Case ptFieldName
-    Case "FTPdtGroup"
-        tValue = SP_SQLtFormatText(ocbFTPdtGroup.BoundText, Text)
-        bFound = True
-    Case "FTPdtUnit"
-        tValue = SP_SQLtFormatText(ocbFTPdtUnit.BoundText, Text)
-        bFound = True
-    End Select
-    '/normal case field
-    If bFound = False Then
-        Select Case Mid(ptFieldName, 1, 2)
-        Case "FD"
-            tValue = SP_DATtGetInput(Me, "odt", ptFieldName)
-        Case Else
-            tValue = SP_DATtGetInput(Me, "otb", ptFieldName)
-        End Select
-    End If
-    
-    If tValue = "" Then tValue = "NULL"
-    
-    SP_SQLtGetValue = tValue
 End Function
 
 Private Sub otbCliteria_GotFocus()

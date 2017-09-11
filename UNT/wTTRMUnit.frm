@@ -546,42 +546,7 @@ Private Function SP_TBLbSaveData() As Boolean
     
     Dim bSuccess As Boolean
     bSuccess = False
-    '//read structure
-    Dim oRec As ADODB.Recordset
-    
-    Set oRec = oW_DbConn.Execute("SELECT * FROM " & tW_TblName & " WHERE (1=0)")
-    
-    Dim nIdx As Integer
-    Dim tVal As String
-    Dim tSQLColName As String
-    Dim tSQLValue As String
-    Dim tSQLUpdate As String
-    '//Read data FROM form to SQL Command
-    For nIdx = 0 To oRec.Fields.Count - 1
-        
-        tVal = SP_SQLtGetValue(oRec.Fields(nIdx).Name)
-        
-        tSQLColName = tSQLColName & IIf(tSQLColName <> "", ",", "") & oRec.Fields(nIdx).Name
-        tSQLValue = tSQLValue & IIf(tSQLValue <> "", ",", "") & tVal
-        tSQLUpdate = tSQLUpdate & IIf(tSQLUpdate <> "", ",", "") & oRec.Fields(nIdx).Name & "=" & tVal
-
-    Next nIdx
-    oRec.Close
-    
-    '//Generate SQL Command
-    
-    tSQLColName = "INSERT INTO " & tW_TblName & " (" & tSQLColName & ") VALUES "
-    tSQLValue = "(" & tSQLValue & ")"
-    
-    tSQLUpdate = Replace("UPDATE " & tW_TblName & " SET " & tSQLUpdate & " WHERE FTUntCode=?", "=?", "='" & otbFTUntCode.Text & "'")
-    
-    '//Try to insert first and then update if insert failed
-    If SP_SQLbRunCommand(oW_DbConn, tSQLColName & tSQLValue) = False Then
-        bSuccess = SP_SQLbRunCommand(oW_DbConn, tSQLUpdate)
-    Else
-        bSuccess = True
-    End If
-    
+   
     SP_TBLbSaveData = bSuccess
     
     Exit Function
@@ -592,16 +557,6 @@ Err:
     Call SP_SHOWbMessage(Err.Description, Critical)
     
 End Function
-Private Function SP_SQLtGetValue(ptFieldName As String) As String
-    Dim tValue As String
-    
-    tValue = SP_DATtGetInput(Me, "otb", ptFieldName)
-    
-    If tValue = "" Then tValue = "NULL"
-    
-    SP_SQLtGetValue = tValue
-End Function
-
 Private Sub otbCliteria_GotFocus()
     Call SP_CTLxSetFocus(Me.ActiveControl)
 End Sub
