@@ -7,6 +7,7 @@ Public Const tCS_TRDefUser As String = "System"     'Default user
 Public Const tCS_TRDbName As String = "AdaTrain"      'Default database name
 Public Const tCS_TRDbUser As String = "sa"    'Default DB User
 Public Const tCS_TRDbPwd As String = "P@ssw0rd"    'Default DB Password
+Public Const tCS_TRDbFldDef As String = "FDDateIns,FTTimeIns,FTWhoIns,FDDateUpd,FTTimeUpd,FTWhoUpd"     'Default Field
 
 '//Provider constant
 Public Const tCS_TRPrvSQL As String = "SQLOLEDB.1"        'Default Provider Name SQL SERVER

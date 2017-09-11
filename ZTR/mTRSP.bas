@@ -142,6 +142,43 @@ Case Else
     SP_GETtNewID = ""
 End Select
 End Function
+Public Function SP_GETtSQLDefault(poActionType As EN_TRDbAction) As String
+Dim tFldNme As String
+Dim tFldVal As String
+Dim tSQL As String
+
+tFldNme = ""
+tFldVal = ""
+tSQL = ""
+
+Dim oArr As Variant
+oArr = Split(mTRCS.tCS_TRDbFldDef, ",")
+
+Dim nIdx As Integer
+For nIdx = 0 To UBound(oArr)
+
+    If poActionType = Insert Then
+    
+        If tFldNme <> "" Then tFldNme = tFldNme & ","
+        tFldNme = tFldNme & oArr(nIdx)
+        
+        If tFldVal <> "" Then tFldVal = tFldVal & ","
+        tFldVal = tFldVal & SP_GETtSQLDefVal("" & oArr(nIdx))
+    Else
+        tFldNme = oArr(nIdx)
+        tFldVal = SP_GETtSQLDefVal(tFldNme)
+        If tSQL <> "" Then tSQL = tSQL & "," & vbCrLf
+        tSQL = tSQL & tFldNme & "=" & tFldVal
+    End If
+Next nIdx
+
+If tSQL = "" Then
+    tSQL = tFldNme & ";" & tFldVal
+End If
+
+SP_GETtSQLDefault = tSQL
+
+End Function
 Public Function SP_GETtSQLDefVal(ptName As String) As String
     '//special case field
     Select Case ptName
@@ -157,7 +194,7 @@ Public Function SP_GETtSQLDefVal(ptName As String) As String
 End Function
 Public Sub SP_SETxLogTbl(poAction As EN_TRDbAction, ptTableName As String, ptWhere As String, poDbConn As ADODB.Connection)
 
-    Dim tSql As String
+    Dim tSQL As String
     Dim tLogType As String
     
     Select Case poAction
@@ -174,34 +211,34 @@ Public Sub SP_SETxLogTbl(poAction As EN_TRDbAction, ptTableName As String, ptWhe
         Dim tSQLDate As String
         Dim tSQLTime As String
         
-        tSql = " Update " & ptTableName & " set "
-        tSql = tSql & " FDDate" & tLogType & "={0}, "
-        tSql = tSql & " FTTime" & tLogType & "={1}, "
-        tSql = tSql & " FTWho" & tLogType & "='" & tVB_TRUser & "'"
+        tSQL = " Update " & ptTableName & " set "
+        tSQL = tSQL & " FDDate" & tLogType & "={0}, "
+        tSQL = tSQL & " FTTime" & tLogType & "={1}, "
+        tSQL = tSQL & " FTWho" & tLogType & "='" & tVB_TRUser & "'"
         
         If tLogType = "Ins" Then
-            tSql = tSql & " ,FDDateUpd={0}, "
-            tSql = tSql & " FTTimeUpd={1}, "
-            tSql = tSql & " FTWhoUpd='" & tVB_TRUser & "'"
+            tSQL = tSQL & " ,FDDateUpd={0}, "
+            tSQL = tSQL & " FTTimeUpd={1}, "
+            tSQL = tSQL & " FTWhoUpd='" & tVB_TRUser & "'"
         End If
         
         If eVB_TRDbType = ACCESS Then
         
-                tSql = Replace(tSql, "{0}", "Format(Now(),'yyyy-MM-dd')")
-                tSql = Replace(tSql, "{1}", "Format(Now(),'HH:mm:ss')")
+                tSQL = Replace(tSQL, "{0}", "Format(Now(),'yyyy-MM-dd')")
+                tSQL = Replace(tSQL, "{1}", "Format(Now(),'HH:mm:ss')")
                 
         End If
         
         If eVB_TRDbType = SQLServer Then
         
-                tSql = Replace(tSql, "{0}", "Convert(date,GetDate())")
-                tSql = Replace(tSql, "{1}", "Convert(time,GetDate())")
+                tSQL = Replace(tSQL, "{0}", "Convert(date,GetDate())")
+                tSQL = Replace(tSQL, "{1}", "Convert(time,GetDate())")
                 
         End If
                 
-        tSql = tSql & " WHERE " & ptWhere
+        tSQL = tSQL & " WHERE " & ptWhere
         
-        poDbConn.Execute tSql
+        poDbConn.Execute tSQL
     
     End If
 End Sub
@@ -317,6 +354,7 @@ Public Function SP_GETtSQLFormat(ptValue As String, poDataType As EN_TRDataType)
     SP_GETtSQLFormat = tStr
     
     Exit Function
+    
 ErrHandle:
     SP_GETtSQLFormat = "NULL"
 End Function

@@ -136,7 +136,7 @@ Begin VB.Form wTTRMCst
          _ExtentX        =   2355
          _ExtentY        =   661
          _Version        =   393216
-         Format          =   118095875
+         Format          =   115408899
          CurrentDate     =   2
          MinDate         =   2
       End
@@ -480,6 +480,8 @@ Private Sub W_SETxProperty()
     Me.otbFTCstFax.Tag = "FTCstFax"
     Me.otbFCCreditLimit.Tag = "FCCreditLimit"
     Me.odtFDBirthDate.Tag = "FDBirthDate"
+    Me.olbFTCstPriceLv.Tag = "FTCstPriceLv"
+    Me.orbActive.Tag = "FTCstStatus"
     
     Call W_SETxCliteria
     
@@ -491,10 +493,10 @@ Private Function W_SQLtPrimaryKey() As String
 '   Call -
 '   Ret : String เป็นคำสั่ง SQL ที่ไม่มี Where จากตัวแปร tw_PrimaryKey
 '----------------------------------------------------------
-    Dim tSql As String
-    tSql = Replace(tw_PrimaryKey, "{0}", otbFTCstCode.Text)
+    Dim tSQL As String
+    tSQL = Replace(tw_PrimaryKey, "{0}", otbFTCstCode.Text)
     
-    W_SQLtPrimaryKey = tSql
+    W_SQLtPrimaryKey = tSQL
     
 End Function
 Private Function W_SQLtSearch() As String
@@ -503,19 +505,19 @@ Private Function W_SQLtSearch() As String
 '   ใช้สร้างคำสั่ง SQL ในการ Query ข้อมูลตามที่ User ป้อนเงื่อนไขการค้นหา
 '----------------------------------------------------------
 
-    Dim tSql As String
+    Dim tSQL As String
     '//search cliteria default
     If ockNonActive.Value = vbChecked Then
-        tSql = " WHERE FTCstStatus<>'0' "
+        tSQL = " WHERE FTCstStatus='2' "
     Else
-        tSql = " WHERE FTCstStatus='0' "
+        tSQL = " WHERE FTCstStatus='1' "
     End If
     '//if search based FROM all fields or selected field to search
     If otbCliteria.Text <> "" Then
         If ocbSearch.ListIndex > 0 Then
-            tSql = tSql & " AND " & ocbSearch.Text & " LIKE '%" & otbCliteria.Text & "%'"
+            tSQL = tSQL & " AND " & ocbSearch.Text & " LIKE '%" & otbCliteria.Text & "%'"
         Else
-            tSql = tSql & " AND ("
+            tSQL = tSQL & " AND ("
             
             Dim tCliteria As String
             Dim nIdx As Integer
@@ -524,14 +526,14 @@ Private Function W_SQLtSearch() As String
                 tCliteria = tCliteria & ocbSearch.List(nIdx) & " LIKE '%" & otbCliteria.Text & "%'"
             Next nIdx
             
-            tSql = tSql & tCliteria
-            tSql = tSql & ")"
+            tSQL = tSQL & tCliteria
+            tSQL = tSQL & ")"
         End If
     
     End If
-    tSql = tSql & " ORDER BY 1"
+    tSQL = tSQL & " ORDER BY 1"
     
-    W_SQLtSearch = tSql
+    W_SQLtSearch = tSQL
     
 End Function
 Private Function W_SQLtGrid() As String
@@ -542,14 +544,14 @@ Private Function W_SQLtGrid() As String
 '   Ret : String เป็นคำสั่ง SQL ที่มาจากการอ่านค่าข้อมูลใน Form แล้ว
 '----------------------------------------------------------
     '//prepare data for grid view
-    Dim tSql As String
+    Dim tSQL As String
     
-    tSql = "SELECT " & tw_FldList
-    tSql = tSql & ",FDDateUpd,FTTimeUpd,FTWhoUpd,FDDateIns,FTTimeIns,FTWhoIns"
-    tSql = tSql & vbCrLf & " FROM  " & tW_TblName
-    tSql = tSql & vbCrLf & W_SQLtSearch()
+    tSQL = "SELECT " & tw_FldList
+    tSQL = tSQL & ",FDDateUpd,FTTimeUpd,FTWhoUpd,FDDateIns,FTTimeIns,FTWhoIns"
+    tSQL = tSQL & vbCrLf & " FROM  " & tW_TblName
+    tSQL = tSQL & vbCrLf & W_SQLtSearch()
     
-    W_SQLtGrid = tSql
+    W_SQLtGrid = tSQL
 End Function
 Private Sub W_SETxCliteria()
 '----------------------------------------------------------
@@ -625,7 +627,7 @@ Private Sub Form_Load()
     '//show grid and set defaults
     Call W_SETxGrid
     Call W_SETxProperty
-    Call W_SETxClearForm
+    Call W_SETxClearData
 
 End Sub
 Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
@@ -644,16 +646,16 @@ Private Sub ockNonActive_Click()
 End Sub
 Private Sub ocmAdd_Click()
 
-    Call W_SETxClearForm
+    Call W_SETxClearData
     otbFTCstCode.SetFocus
     
 End Sub
 Private Sub ocmDelete_Click()
     '//delete data
     If SP_SHOWbMessage(tMS_0005, Confirmation) = False Then Exit Sub
-    If W_TBLbDeleteData() = True Then
+    If W_DELbData() = True Then
     
-        Call W_SETxClearForm
+        Call W_SETxClearData
         Call W_SETxGrid
         Call SP_SHOWbMessage(tMS_0010, Exclamation)
     End If
@@ -666,7 +668,7 @@ Private Sub ocmExit_Click()
 End Sub
 Private Sub ocmSave_Click()
     '//Save Data
-    If W_DATbCheckValidate() = False Then Exit Sub
+    If W_CHKbData() = False Then Exit Sub
     If SP_SHOWbMessage(tMS_0004, Question) = False Then Exit Sub
     '//generate new code here if user input blank
     If Trim(otbFTCstCode.Text) = "" Then
@@ -676,13 +678,13 @@ Private Sub ocmSave_Click()
     If W_TBLbSaveData() = True Then        'using SQL Command for saving data
         
         Call W_SETxGrid
-        Call W_DATxLoadFROMDB
+        Call W_LOADxData
         Call SP_SHOWbMessage(tMS_0007, Information)
         
     End If
 
 End Sub
-Private Function W_TBLbDeleteData() As Boolean
+Private Function W_DELbData() As Boolean
 '----------------------------------------------------------
 '   *Puttipong 2017-09-11
 '   ใชสำหรับลบช้อมูลจาก Database
@@ -696,16 +698,16 @@ Private Function W_TBLbDeleteData() As Boolean
            
     SP_EXECoSQL oW_DbConn, tSQLDelete
            
-    W_TBLbDeleteData = True
+    W_DELbData = True
     
     Exit Function
 
 ErrHandle:
     
-    W_TBLbDeleteData = False
+    W_DELbData = False
     Call SP_SHOWbMessage(Err.Description, Critical)
 End Function
-Private Function W_DATbCheckValidate() As Boolean
+Private Function W_CHKbData() As Boolean
 '----------------------------------------------------------
 '   *Puttipong 2017-09-11
 '   ตรวจสอบข้อมูลก่อนเซฟ
@@ -766,7 +768,7 @@ Private Function W_DATbCheckValidate() As Boolean
         Call SP_SHOWbMessage(tMsg, Exclamation)
     End If
     
-    W_DATbCheckValidate = bValid
+    W_CHKbData = bValid
     
 End Function
 Private Function W_TBLbSaveData() As Boolean
@@ -788,47 +790,17 @@ Private Function W_TBLbSaveData() As Boolean
     Dim oCtl As Control
     
     Dim tSQLIns As String
-    Dim tSQLValue As String
+    Dim tSQLInsFld As String
+    Dim tSQLInsVal As String
     Dim tSQLUpd As String
     Dim tVal As String
-    Dim tFld As String
     
-    tFld = "FDDateIns"
-    tVal = SP_GETtSQLDefVal(tFld)
-    tSQLIns = tSQLIns & IIf(tSQLIns <> "", ",", "") & tFld
-    tSQLValue = tSQLValue & IIf(tSQLValue <> "", ",", "") & tVal
-    tSQLUpd = tSQLUpd & IIf(tSQLUpd <> "", ",", "") & tFld & "=" & tVal
+    tSQLIns = SP_GETtSQLDefault(Insert)
+    tSQLInsFld = "" & Split(tSQLIns, ";")(0)
+    tSQLInsVal = "" & Split(tSQLIns, ";")(1)
+    
+    tSQLUpd = SP_GETtSQLDefault(Update)
                     
-    tFld = "FDDateUpd"
-    tVal = SP_GETtSQLDefVal(tFld)
-    tSQLIns = tSQLIns & IIf(tSQLIns <> "", ",", "") & tFld
-    tSQLValue = tSQLValue & IIf(tSQLValue <> "", ",", "") & tVal
-    tSQLUpd = tSQLUpd & IIf(tSQLUpd <> "", ",", "") & tFld & "=" & tVal
-                    
-    tFld = "FTTimeIns"
-    tVal = SP_GETtSQLDefVal(tFld)
-    tSQLIns = tSQLIns & IIf(tSQLIns <> "", ",", "") & tFld
-    tSQLValue = tSQLValue & IIf(tSQLValue <> "", ",", "") & tVal
-    tSQLUpd = tSQLUpd & IIf(tSQLUpd <> "", ",", "") & tFld & "=" & tVal
-    
-    tFld = "FTTimeUpd"
-    tVal = SP_GETtSQLDefVal(tFld)
-    tSQLIns = tSQLIns & IIf(tSQLIns <> "", ",", "") & tFld
-    tSQLValue = tSQLValue & IIf(tSQLValue <> "", ",", "") & tVal
-    tSQLUpd = tSQLUpd & IIf(tSQLUpd <> "", ",", "") & tFld & "=" & tVal
-    
-    tFld = "FTWhoIns"
-    tVal = SP_GETtSQLDefVal(tFld)
-    tSQLIns = tSQLIns & IIf(tSQLIns <> "", ",", "") & tFld
-    tSQLValue = tSQLValue & IIf(tSQLValue <> "", ",", "") & tVal
-    tSQLUpd = tSQLUpd & IIf(tSQLUpd <> "", ",", "") & tFld & "=" & tVal
-    
-    tFld = "FTWhoUpd"
-    tVal = SP_GETtSQLDefVal(tFld)
-    tSQLIns = tSQLIns & IIf(tSQLIns <> "", ",", "") & tFld
-    tSQLValue = tSQLValue & IIf(tSQLValue <> "", ",", "") & tVal
-    tSQLUpd = tSQLUpd & IIf(tSQLUpd <> "", ",", "") & tFld & "=" & tVal
-    
     For Each oCtl In Me.Controls
         If oCtl.Tag <> "" Then
             tVal = ""
@@ -844,27 +816,27 @@ Private Function W_TBLbSaveData() As Boolean
                 Case "ListBox"
                     tVal = SP_GETtSQLFormat(oCtl.Text, Text)
                 Case "OptionButton"
-                    tVal = SP_GETtSQLFormat(oCtl.Value, Bool)
+                    tVal = SP_GETtSQLFormat(IIf(oCtl.Value = True, 1, 2), Text)
                 Case "CheckBox"
-                    tVal = SP_GETtSQLFormat(oCtl.Checked, Bool)
+                    tVal = SP_GETtSQLFormat(IIf(oCtl.Checked = vbChecked, 1, 2), Text)
             End Select
-            tSQLIns = tSQLIns & "," & oCtl.Tag
-            tSQLValue = tSQLValue & "," & tVal
+            tSQLInsFld = tSQLInsFld & "," & oCtl.Tag
+            tSQLInsVal = tSQLInsVal & "," & tVal
             tSQLUpd = tSQLUpd & "," & oCtl.Tag & "=" & tVal
         End If
      Next
     '//Generate SQL Command
-    tSQLIns = "INSERT INTO TTRMCst (" & tSQLIns & ") "
-    tSQLIns = vbCrLf & "VALUES (" & tSQLValue & ")"
+    tSQLIns = "INSERT INTO " & tW_TblName & " (" & tSQLInsFld & ") "
+    tSQLIns = tSQLIns & vbCrLf & "VALUES (" & tSQLInsVal & ")"
     
-    tSQLUpd = "UPDATE TTRMCst  SET " & vbCrLf & tSQLUpd
+    tSQLUpd = "UPDATE " & tW_TblName & "  SET " & vbCrLf & tSQLUpd
     tSQLUpd = tSQLUpd & vbCrLf & " WHERE " & W_SQLtPrimaryKey()
     
     '//Try to insert first and then update if insert failed
-    If SP_EXECbSQL(oW_DbConn, tSQLIns & tSQLValue) = False Then
+    If W_GEToData().EOF = False Then
         bSuccess = SP_EXECbSQL(oW_DbConn, tSQLUpd)
     Else
-        bSuccess = True
+        bSuccess = SP_EXECbSQL(oW_DbConn, tSQLIns)
     End If
     
     W_TBLbSaveData = bSuccess
@@ -878,6 +850,10 @@ ErrHandle:
     
 End Function
 Private Function W_TBLbUpdateData() As Boolean
+'----------------------------------------------------------
+'   *Puttipong 2017-09-11
+'   ใช้ Save ข้อมูลโดยการ Assign ข้อมูลลง Recordset ตรงๆ โดยไม่ต้อง Run คำสั่ง SQL Insert/update
+'----------------------------------------------------------
     '//using Recordset update instread of SQL Command for prevent String exception
     On Error GoTo ErrHandle:
     '//Generate new code
@@ -886,7 +862,7 @@ Private Function W_TBLbUpdateData() As Boolean
     End If
     '//Read FROM Database and filter for key input
     Dim oRs As ADODB.Recordset
-    Set oRs = W_TBLoQueryData()
+    Set oRs = W_GEToData()
     
     Dim oAction As EN_TRDbAction
     With oRs
@@ -931,7 +907,14 @@ ErrHandle:
     W_TBLbUpdateData = False
 
 End Function
-Private Sub W_SETxClearForm(Optional ptCode As String = "")
+Private Sub W_SETxClearData(Optional ptCode As String = "")
+'----------------------------------------------------------
+'   *Puttipong 2017-09-11
+'   ใชล้างหน้าจอและกำหนดค่าเริ่มต้นของ Control ใหม่
+'   Call:
+'       pCode = รหัสที่จะแสดงข้อมูล ใส่ค่าว่างได้
+'
+'----------------------------------------------------------
     '//clear form
     Me.otbFTCstCode.Text = ptCode
     Me.otbFTCstName.Text = ""
@@ -952,31 +935,42 @@ Private Sub W_SETxClearForm(Optional ptCode As String = "")
     Me.otbFTCstCode.BackColor = vbWhite
 
 End Sub
-Private Function W_TBLoQueryData() As ADODB.Recordset
+Private Function W_GEToData() As ADODB.Recordset
+'----------------------------------------------------------
+'   *Puttipong 2017-09-11
+'   ใช้ query ข้อมูลจาก primary key
+'
+'   Ret :
+'       RecordSet ของข้อมูล
+'----------------------------------------------------------
+On Error GoTo ErrHandle:
+
     '//Query database for current key input
     Dim oTbl As New ADODB.Recordset
     
     Set oTbl = SP_GEToData(oW_DbConn, "Cst")
     oTbl.Filter = W_SQLtPrimaryKey()
     
-    Set W_TBLoQueryData = oTbl
-    
+    Set W_GEToData = oTbl
+    Exit Function
+ErrHandle:
+    Set W_GEToData = New ADODB.Recordset
 End Function
-Private Sub W_DATxLoadFROMDB()
+Private Sub W_LOADxData()
 '----------------------------------------------------------
 '   *Puttipong 2017-09-11
-'   ใช้ query ข้อมูลจาก key แล้วนำมาแสดงใน form
+'   ใช้ query ข้อมูลจาก primary key แล้วนำมาแสดงใน form
 '----------------------------------------------------------
     On Error GoTo ErrHandle:
         
     '//Read FROM data when user input key
     Dim oTbl As ADODB.Recordset
-    Set oTbl = W_TBLoQueryData()
+    Set oTbl = W_GEToData()
     
     If oTbl.EOF = True Then
     
         '//if not found then clear form and show msgbox data not found
-        Call W_SETxClearForm(Me.otbFTCstCode.Text)
+        Call W_SETxClearData(Me.otbFTCstCode.Text)
         
         oTbl.Close
         Set oTbl = Nothing
@@ -994,8 +988,8 @@ Private Sub W_DATxLoadFROMDB()
         Me.otbFTCstTel.Text = "" & .Fields("FTCstTel").Value
         Me.otbFTCstFax.Text = "" & .Fields("FTCstFax").Value
         Me.otbFTRemark.Text = "" & .Fields("FTRemark").Value
-        Me.orbActive.Value = IIf(.Fields("FTCstStatus").Value = "0", True, False)
-        Me.orbInactive.Value = IIf(.Fields("FTCstStatus").Value = "0", False, True)
+        Me.orbActive.Value = IIf(.Fields("FTCstStatus").Value = "1", True, False)
+        Me.orbInactive.Value = IIf(.Fields("FTCstStatus").Value = "1", False, True)
         Me.olbFTCstPriceLv.ListIndex = CInt(.Fields("FTCstPriceLv").Value) - 1
         
         Me.ocmDelete.Enabled = Me.orbInactive.Value
@@ -1044,7 +1038,7 @@ Private Sub ogdMain_RowColChange()
     If ogdMain.Row > 0 Then
 
         Me.otbFTCstCode.Text = ogdMain.TextMatrix(ogdMain.Row, 1)
-        Call W_DATxLoadFROMDB
+        Call W_LOADxData
         
     End If
 
@@ -1057,31 +1051,30 @@ Private Sub otbCliteria_GotFocus()
     
 End Sub
 Private Sub otbFCCreditLimit_GotFocus()
-    
+
     Call SP_SETxCtlSelect(Me.ActiveControl)
     
 End Sub
 Private Sub otbFTCstAddress_GotFocus()
-    
+
     bW_CancelTab = True
     'Call SP_SETxCtlSelect(Me.ActiveControl)
-    
+
 End Sub
 Private Sub otbFTCstAddress_LostFocus()
     
     bW_CancelTab = False
-    
+
 End Sub
 Private Sub otbFTCstCode_GotFocus()
-
-    Call SP_SETxCtlSelect(Me.ActiveControl)
     
+    Call SP_SETxCtlSelect(Me.ActiveControl)
+
 End Sub
 Private Sub otbFTCstCode_LostFocus()
-
-        If Trim(otbFTCstCode.Text) = "" Then Exit Sub
         
-        Call W_DATxLoadFROMDB
+        If Trim(otbFTCstCode.Text) = "" Then Exit Sub
+        Call W_LOADxData
 
 End Sub
 Private Sub otbFTCstFax_GotFocus()
@@ -1090,23 +1083,23 @@ Private Sub otbFTCstFax_GotFocus()
 
 End Sub
 Private Sub otbFTCstName_GotFocus()
-
-    Call SP_SETxCtlSelect(Me.ActiveControl)
     
+    Call SP_SETxCtlSelect(Me.ActiveControl)
+
 End Sub
 Private Sub otbFTCstTel_GotFocus()
-
-    Call SP_SETxCtlSelect(Me.ActiveControl)
     
+    Call SP_SETxCtlSelect(Me.ActiveControl)
+
 End Sub
 Private Sub otbFTRemark_GotFocus()
     
     bW_CancelTab = True
     'Call SP_SETxCtlSelect(Me.ActiveControl)
-    
+
 End Sub
 Private Sub otbFTRemark_LostFocus()
-
+    
     bW_CancelTab = False
 
 End Sub
