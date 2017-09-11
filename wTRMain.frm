@@ -34,6 +34,18 @@ Begin VB.MDIForm wTRMain
       Begin VB.Menu omnCst 
          Caption         =   "Customer"
       End
+      Begin VB.Menu omnProduct 
+         Caption         =   "Product"
+      End
+      Begin VB.Menu omnPdtGroup 
+         Caption         =   "Product Group"
+      End
+      Begin VB.Menu omnSpn 
+         Caption         =   "Sales Person"
+      End
+      Begin VB.Menu omnUnit 
+         Caption         =   "Unit"
+      End
       Begin VB.Menu oln1 
          Caption         =   "-"
       End
@@ -68,11 +80,11 @@ Attribute VB_Exposed = False
 Option Explicit
 Private Sub MDIForm_Load()
     '//Show Global variable
-    Me.Caption = mTRCS.tCS_TRProjectName
+    Me.Caption = mTRCS.tCS_TRPrjName
     
-    Me.ostGlobal.Panels(1).Text = IIf(mTRVB.oVB_TRCurrentLang = Thai, "ภาษาไทย", "English")
-    Me.ostGlobal.Panels(2).Text = mTRVB.oVB_TRCurrentUser
-    Me.ostGlobal.Panels(3).Text = mTRSP.SP_DATtGetConnStr(mTRCS.tCS_TRDatabaseUser, mTRCS.tCS_TRDatabasePassword, ".", mTRCS.tCS_TRDatabaseName)
+    Me.ostGlobal.Panels(1).Text = IIf(mTRVB.eVB_TRLang = Thai, "ภาษาไทย", "English")
+    Me.ostGlobal.Panels(2).Text = mTRVB.tVB_TRUser
+    Me.ostGlobal.Panels(3).Text = SP_DATtGetConnStr(mTRCS.tCS_TRDbUser, mTRCS.tCS_TRDbPwd, ".", mTRCS.tCS_TRDbName)
     Me.WindowState = vbMaximized
     
 End Sub
@@ -80,11 +92,11 @@ End Sub
 Private Sub MDIForm_QueryUnload(Cancel As Integer, UnloadMode As Integer)
     'Check if any form opened alert that user must close all windows first before ask to exit program
     If wTRMain.ActiveForm Is Nothing Then
-        If mTRSP.SP_SHOWbMessage(mTRMS.tMS_TRConfirmExit, Confirmation) = False Then
+        If SP_SHOWbMessage(mTRMS.tMS_0002, Confirmation) = False Then
             Cancel = 1
         End If
     Else
-        Call mTRSP.SP_SHOWbMessage(mTRMS.tMS_TRWarnCloseAllWindowFirst, Exclamation)
+        Call SP_SHOWbMessage(mTRMS.tMS_0012, Exclamation)
         Cancel = 1
     End If
 
@@ -92,26 +104,26 @@ End Sub
 
 Private Sub MDIForm_Unload(Cancel As Integer)
     'clear connection
-    If mTRVB.oVB_TRDatabaseConnection.State = adStateOpen Then
-        mTRVB.oVB_TRDatabaseConnection.Close
+    If mTRVB.oVB_TRDbCon.State = adStateOpen Then
+        mTRVB.oVB_TRDbCon.Close
     End If
     
-    Set mTRVB.oVB_TRDatabaseConnection = Nothing
+    Set mTRVB.oVB_TRDbCon = Nothing
 
 End Sub
 
 Private Sub omnAccess_Click()
 If Me.ActiveForm Is Nothing Then
-    Call mTRSP.SP_SETxVariable(mTRCS.tCS_TRDefaultUser, ACCESS, mTRVB.oVB_TRCurrentLang, True)
-    Me.ostGlobal.Panels(3).Text = mTRSP.SP_DATtGetConnStr(mTRCS.tCS_TRDatabaseUser, mTRCS.tCS_TRDatabasePassword, ".", mTRCS.tCS_TRDatabaseName)
+    Call SP_SETxVariable(mTRCS.tCS_TRDefUser, ACCESS, mTRVB.eVB_TRLang, True)
+    Me.ostGlobal.Panels(3).Text = SP_DATtGetConnStr(mTRCS.tCS_TRDbUser, mTRCS.tCS_TRDbPwd, ".", mTRCS.tCS_TRDbName)
 Else
-    Call mTRSP.SP_SHOWbMessage("Cannot Change Database While others window opened;ไม่สามารถเปลี่ยนฐานข้อมูลได้เพราะมีหน้าจอเปิดอยู่", Critical)
+    Call SP_SHOWbMessage("Cannot Change Database While others window opened;ไม่สามารถเปลี่ยนฐานข้อมูลได้เพราะมีหน้าจอเปิดอยู่", Critical)
 End If
 End Sub
 
 Private Sub omnCst_Click()
     
-    If mTRVB.oVB_TRDatabaseConnection.State = adStateOpen Then
+    If mTRVB.oVB_TRDbCon.State = adStateOpen Then
         
         Load wTTRMCst
         wTTRMCst.Show
@@ -122,8 +134,8 @@ End Sub
 
 Private Sub omnENLang_Click()
     'Change language
-    mTRVB.oVB_TRCurrentLang = English
-    Me.ostGlobal.Panels(1).Text = IIf(mTRVB.oVB_TRCurrentLang = Thai, "ภาษาไทย", "English")
+    mTRVB.eVB_TRLang = English
+    Me.ostGlobal.Panels(1).Text = IIf(mTRVB.eVB_TRLang = Thai, "ภาษาไทย", "English")
 End Sub
 
 Private Sub omnExit_Click()
@@ -131,22 +143,58 @@ Private Sub omnExit_Click()
     If Me.ActiveForm Is Nothing Then
         Unload Me
     Else
-        Call mTRSP.SP_SHOWbMessage(mTRMS.tMS_TRWarnCloseAllWindowFirst, Exclamation)
+        Call SP_SHOWbMessage(mTRMS.tMS_0012, Exclamation)
     End If
 End Sub
 
 Private Sub omnMSSQL_Click()
 If Me.ActiveForm Is Nothing Then
-    Call mTRSP.SP_SETxVariable(mTRCS.tCS_TRDefaultUser, SQLServer, mTRVB.oVB_TRCurrentLang, True)
-    Me.ostGlobal.Panels(3).Text = mTRSP.SP_DATtGetConnStr(mTRCS.tCS_TRDatabaseUser, mTRCS.tCS_TRDatabasePassword, ".", mTRCS.tCS_TRDatabaseName)
+    Call SP_SETxVariable(mTRCS.tCS_TRDefUser, SQLServer, mTRVB.eVB_TRLang, True)
+    Me.ostGlobal.Panels(3).Text = SP_DATtGetConnStr(mTRCS.tCS_TRDbUser, mTRCS.tCS_TRDbPwd, ".", mTRCS.tCS_TRDbName)
 Else
-    Call mTRSP.SP_SHOWbMessage("Cannot Change Database While others window opened;ไม่สามารถเปลี่ยนฐานข้อมูลได้เพราะมีหน้าจอเปิดอยู่", Critical)
+    Call SP_SHOWbMessage("Cannot Change Database While others window opened;ไม่สามารถเปลี่ยนฐานข้อมูลได้เพราะมีหน้าจอเปิดอยู่", Critical)
 End If
+End Sub
+
+Private Sub omnPdtGroup_Click()
+    If mTRVB.oVB_TRDbCon.State = adStateOpen Then
+        
+        Load wTTRMPdtGrp
+        wTTRMPdtGrp.Show
+    
+    End If
+End Sub
+
+Private Sub omnProduct_Click()
+    If mTRVB.oVB_TRDbCon.State = adStateOpen Then
+        
+        Load wTTRMPdt
+        wTTRMPdt.Show
+    
+    End If
+End Sub
+
+Private Sub omnSpn_Click()
+    If mTRVB.oVB_TRDbCon.State = adStateOpen Then
+        
+        Load wTTRMSpn
+        wTTRMSpn.Show
+    
+    End If
 End Sub
 
 Private Sub omnTHLang_Click()
     'Change Language
-    mTRVB.oVB_TRCurrentLang = Thai
-    Me.ostGlobal.Panels(1).Text = IIf(mTRVB.oVB_TRCurrentLang = Thai, "ภาษาไทย", "English")
+    mTRVB.eVB_TRLang = Thai
+    Me.ostGlobal.Panels(1).Text = IIf(mTRVB.eVB_TRLang = Thai, "ภาษาไทย", "English")
     
+End Sub
+
+Private Sub omnUnit_Click()
+    If mTRVB.oVB_TRDbCon.State = adStateOpen Then
+        
+        Load wTTRMUnit
+        wTTRMUnit.Show
+    
+    End If
 End Sub

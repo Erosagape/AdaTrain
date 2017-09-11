@@ -1,8 +1,8 @@
 Attribute VB_Name = "mTRVB"
-Public oVB_TRCurrentUser As String
-Public oVB_TRCurrentLang As EN_TRLanguage
-Public oVB_TRDatabaseType As EN_TRDatabasePlatform
-Public oVB_TRDatabaseConnection As ADODB.Connection
+Public tVB_TRUser As String
+Public eVB_TRLang As EN_TRLang
+Public eVB_TRDbType As EN_TRDbType
+Public oVB_TRDbCon As ADODB.Connection
 
 
 

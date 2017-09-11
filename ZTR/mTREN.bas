@@ -1,12 +1,12 @@
 Attribute VB_Name = "mTREN"
 'Type of database platform usage
-Public Enum EN_TRDatabasePlatform
+Public Enum EN_TRDbType
     ACCESS = 0
     SQLServer = 1
 End Enum
 
 'Type of database action
-Public Enum EN_TRDatabaseAction
+Public Enum EN_TRDbAction
     Insert = 0
     Update = 1
     Delete = 2
@@ -22,13 +22,13 @@ Public Enum EN_TRDataType
 End Enum
 
 'Type of default Language
-Public Enum EN_TRLanguage
+Public Enum EN_TRLang
     English = 0
     Thai = 1
 End Enum
 
 'Type of Dialog Message
-Public Enum EN_TRMessageType
+Public Enum EN_TRMsgType
     Information = 0
     Exclamation = 1
     Question = 2

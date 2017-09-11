@@ -14,23 +14,13 @@ Begin VB.Form wTTRMCst
    ScaleHeight     =   10920
    ScaleWidth      =   7755
    WindowState     =   2  'Maximized
-   Begin VB.CommandButton ocmAdd 
-      Caption         =   "&Clear"
+   Begin VB.CommandButton Command1 
+      Caption         =   "Command1"
       Height          =   375
-      Left            =   2760
-      TabIndex        =   21
-      Top             =   9840
-      Width           =   1095
-   End
-   Begin VB.TextBox otbLastupdate 
-      BackColor       =   &H00FFFFC0&
-      Height          =   375
-      Left            =   3960
-      Locked          =   -1  'True
-      TabIndex        =   36
-      TabStop         =   0   'False
-      Top             =   9840
-      Width           =   3615
+      Left            =   3360
+      TabIndex        =   39
+      Top             =   10440
+      Width           =   1215
    End
    Begin VB.CommandButton ocmSearch 
       Caption         =   "&Find"
@@ -80,6 +70,23 @@ Begin VB.Form wTTRMCst
       TabIndex        =   1
       Top             =   5520
       Width           =   7575
+      Begin VB.TextBox otbLastUpdate 
+         BackColor       =   &H00FFFFC0&
+         Height          =   375
+         Left            =   3840
+         Locked          =   -1  'True
+         TabIndex        =   38
+         Top             =   4320
+         Width           =   3615
+      End
+      Begin VB.CommandButton ocmAdd 
+         Caption         =   "&Clear"
+         Height          =   375
+         Left            =   2640
+         TabIndex        =   21
+         Top             =   4320
+         Width           =   1095
+      End
       Begin VB.CommandButton ocmDelete 
          Caption         =   "&Delete"
          Height          =   375
@@ -95,7 +102,7 @@ Begin VB.Form wTTRMCst
          Height          =   375
          Left            =   6000
          Locked          =   -1  'True
-         TabIndex        =   38
+         TabIndex        =   37
          TabStop         =   0   'False
          Top             =   3840
          Width           =   1455
@@ -137,7 +144,7 @@ Begin VB.Form wTTRMCst
          _ExtentX        =   2355
          _ExtentY        =   661
          _Version        =   393216
-         Format          =   53608451
+         Format          =   106102787
          CurrentDate     =   2
          MinDate         =   2
       End
@@ -154,6 +161,7 @@ Begin VB.Form wTTRMCst
          Left            =   960
          MultiLine       =   -1  'True
          TabIndex        =   19
+         Tag             =   "FTRemark"
          Top             =   3240
          Width           =   4935
       End
@@ -231,7 +239,7 @@ Begin VB.Form wTTRMCst
          Caption         =   "Cheque Pending"
          Height          =   375
          Left            =   6000
-         TabIndex        =   37
+         TabIndex        =   36
          Top             =   3600
          Width           =   1215
       End
@@ -458,8 +466,10 @@ Option Explicit
 Dim oW_DbConn As ADODB.Connection
 Dim bW_CancelTab As Boolean
 
+
+
 Private Sub SP_DATxSetProperty()
-    '//set default max length of control from data dictionary
+    '//set default max length of control FROM data dictionary
     Me.otbFTCstCode.MaxLength = 15
     Me.otbFTCstName.MaxLength = 100
     Me.otbFTCstAddress.MaxLength = 100
@@ -476,69 +486,28 @@ Private Function SP_SQLtGetValue(ptFieldName As String) As String
     '//special case field
     Select Case ptFieldName
     Case "FTCstPriceLv"
-        tValue = mTRSP.SP_SQLtFormatText(olbFTCstPriceLv.ListIndex + 1, Number)
+        tValue = SP_SQLtFormatText(olbFTCstPriceLv.ListIndex + 1, Number)
         bFound = True
     Case "FTCstStatus"
-        tValue = mTRSP.SP_SQLtFormatText(IIf(orbActive.Value = True, "0", "1"), Number)
-        bFound = True
-    Case "FDDateIns", "FDDateUpd"
-        tValue = mTRSP.SP_SQLtFormatText(Format(Now, "yyyy-MM-dd"), Date)
-        bFound = True
-    Case "FTTimeIns", "FTTimeUpd"
-        tValue = mTRSP.SP_SQLtFormatText(Format(Now, "HH:mm:ss"), Text)
-        bFound = True
-    Case "FTWhoIns", "FTWhoUpd"
-        tValue = mTRSP.SP_SQLtFormatText(mTRVB.oVB_TRCurrentUser, Text)
+        tValue = SP_SQLtFormatText(IIf(orbActive.Value = True, "0", "1"), Number)
         bFound = True
     Case "FCCreditLimit"
-        tValue = mTRSP.SP_SQLtFormatText(otbFCCreditLimit.Text, Float)
+        tValue = SP_SQLtFormatText(otbFCCreditLimit.Text, Float)
         bFound = True
     End Select
     '/normal case field
     If bFound = False Then
         Select Case Mid(ptFieldName, 1, 2)
         Case "FD"
-            tValue = SP_DATtGetInput("odt", ptFieldName)
+            tValue = SP_DATtGetInput(Me, "odt", ptFieldName)
         Case Else
-            tValue = SP_DATtGetInput("otb", ptFieldName)
+            tValue = SP_DATtGetInput(Me, "otb", ptFieldName)
         End Select
     End If
     
     If tValue = "" Then tValue = "NULL"
     
     SP_SQLtGetValue = tValue
-End Function
-Private Function SP_DATtGetInput(ptCtlType As String, ptName As String) As String
-    '//find control name
-    Dim oCtl As Control
-    Set oCtl = Me.Controls(ptCtlType & ptName)
-    If oCtl Is Nothing Then     'if control not found return default value
-        Select Case Mid(ptName, 1, 2)
-        Case "FD"
-            SP_DATtGetInput = mTRSP.SP_SQLtFormatText("1900-01-01", Date)
-        Case "FC"
-            SP_DATtGetInput = mTRSP.SP_SQLtFormatText("0.00", Float)
-        Case "FN"
-            SP_DATtGetInput = mTRSP.SP_SQLtFormatText("0", Number)
-        Case "FB"
-            SP_DATtGetInput = mTRSP.SP_SQLtFormatText("0", Bool)
-        Case Else
-            SP_DATtGetInput = mTRSP.SP_SQLtFormatText("", Text)
-        End Select
-    Else        'if found control return value
-        Select Case Mid(ptName, 1, 2)
-        Case "FD"
-            SP_DATtGetInput = mTRSP.SP_SQLtFormatText(oCtl.Value, Date)
-        Case "FC"
-            SP_DATtGetInput = mTRSP.SP_SQLtFormatText(oCtl.Text, Float)
-        Case "FN"
-            SP_DATtGetInput = mTRSP.SP_SQLtFormatText(oCtl.Text, Number)
-        Case "FB"
-            SP_DATtGetInput = mTRSP.SP_SQLtFormatText(oCtl.Value, Bool)
-        Case Else
-            SP_DATtGetInput = mTRSP.SP_SQLtFormatText(oCtl.Text, Text)
-        End Select
-    End If
 End Function
 Private Function SP_SQLtForShow() As String
     '//prepare data for grid view
@@ -557,7 +526,7 @@ Private Function SP_SQLtForShow() As String
     End If
     
     If otbCliteria.Text <> "" Then
-        '//if search based from all fields or selected field to search
+        '//if search based FROM all fields or selected field to search
         If ocbSearch.ListIndex > 0 Then
             tSql = tSql & " AND " & ocbSearch.Text & " LIKE '%" & otbCliteria.Text & "%'"
         Else
@@ -567,6 +536,9 @@ Private Function SP_SQLtForShow() As String
             tSql = tSql & "FTCstAddress LIKE '%" & otbCliteria.Text & "%'  OR "
             tSql = tSql & "FTCstTel LIKE '%" & otbCliteria.Text & "%'  OR "
             tSql = tSql & "FTCstFax LIKE '%" & otbCliteria.Text & "%'  OR "
+            tSql = tSql & "FDBirthDate LIKE '%" & otbCliteria.Text & "%'  OR "
+            tSql = tSql & "FCCreditLimit LIKE '%" & otbCliteria.Text & "%'  OR "
+            tSql = tSql & "FTCstPriceLv='" & otbCliteria.Text & "'  OR "
             tSql = tSql & "FTRemark LIKE '%" & otbCliteria.Text & "%' "
             tSql = tSql & ")"
         End If
@@ -581,7 +553,7 @@ Private Sub SP_DATxReadData(poTbl As ADODB.Recordset)
     If ocbSearch.ListCount = 0 Then
         '//load combobox field list for user selected to find
         Dim tExceptField As String
-        tExceptField = ",FTCstStatus,FTCstPriceLv,FDBirthDate,FCCreditLimit,FCCstARBal,FCCstCHQBal,FDDateUpd,FTTimeUpd,FTWhoUpd"
+        tExceptField = ",FTCstStatus,FCCstARBal,FCCstCHQBal,FDDateUpd,FTTimeUpd,FTWhoUpd,FDDateIns,FTTimeIns,FTWhoIns"
         
         ocbSearch.AddItem "(All Data)"
         Dim nIdx As Integer
@@ -605,7 +577,7 @@ Private Sub SP_DATxShowGrid()
     On Error GoTo Err:
     
     Dim oTbl As ADODB.Recordset
-    Set oTbl = mTRSP.SP_TBLoGetFromSQL(oW_DbConn, SP_SQLtForShow)
+    Set oTbl = SP_TBLoGetFROMSQL(oW_DbConn, SP_SQLtForShow)
     
     Set ogdMain.DataSource = oTbl
     ogdMain.SelectionMode = flexSelectionByRow
@@ -616,9 +588,28 @@ Private Sub SP_DATxShowGrid()
 
 Err:
 
-    Call mTRSP.SP_SHOWbMessage(Err.Description, Critical)
+    Call SP_SHOWbMessage(Err.Description, Critical)
     
 End Sub
+
+Private Sub Command1_Click()
+    Dim oCont As Control
+
+    For Each oCont In Me.Controls
+        Select Case TypeName(oCont)
+            Case "TextBox"
+            Case "ComboBox"
+            Case "DataCombo"
+            Case "DTPicker"
+            Case "ListBox"
+            Case "OptionButton"
+            Case "CheckBox"
+            
+        End Select
+     Next
+
+End Sub
+
 Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
 
     On Error Resume Next
@@ -635,7 +626,7 @@ Private Sub Form_KeyDown(KeyCode As Integer, Shift As Integer)
 End Sub
 Private Sub Form_Load()
     '//prepare connection
-    Set oW_DbConn = mTRVB.oVB_TRDatabaseConnection
+    Set oW_DbConn = mTRVB.oVB_TRDbCon
     '//show grid and set defaults
     Call SP_DATxShowGrid
     Call SP_DATxSetProperty
@@ -643,7 +634,7 @@ Private Sub Form_Load()
 End Sub
 Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
     
-    If mTRSP.SP_SHOWbMessage(mTRMS.tMS_TRConfirmClose, Question) = False Then
+    If SP_SHOWbMessage(mTRMS.tMS_0003, Question) = False Then
         
         Cancel = 1
     
@@ -663,12 +654,12 @@ Private Sub ocmAdd_Click()
 End Sub
 Private Sub ocmDelete_Click()
     '//delete data
-    If mTRSP.SP_SHOWbMessage(mTRMS.tMS_TRConfirmDelete, Confirmation) = False Then Exit Sub
+    If SP_SHOWbMessage(mTRMS.tMS_0005, Confirmation) = False Then Exit Sub
     If SP_TBLbDeleteData() = True Then
     
         Call SP_DATxClearForm
         Call SP_DATxShowGrid
-        Call mTRSP.SP_SHOWbMessage(mTRMS.tMS_TRDeleteOK, Exclamation)
+        Call SP_SHOWbMessage(mTRMS.tMS_0010, Exclamation)
     End If
 
 End Sub
@@ -680,14 +671,14 @@ End Sub
 Private Sub ocmSave_Click()
     '//Save Data
     If SP_DATbCheckValidate() = False Then Exit Sub
-    If mTRSP.SP_SHOWbMessage(mTRMS.tMS_TRConfirmSave, Question) = False Then Exit Sub
+    If SP_SHOWbMessage(mTRMS.tMS_0004, Question) = False Then Exit Sub
         
     'If SP_TBLbUpdateData() = True Then     'using Recordset.update instead of SQL Command
     If SP_TBLbSaveData() = True Then        'using SQL Command for saving data
         
         Call SP_DATxShowGrid
-        
-        Call mTRSP.SP_SHOWbMessage(mTRMS.tMS_TRSaveOK, Information)
+        Call SP_DATxLoadFROMDB
+        Call SP_SHOWbMessage(mTRMS.tMS_0007, Information)
         
     End If
 
@@ -714,7 +705,7 @@ Private Function SP_TBLbDeleteData() As Boolean
 Err:
     
     SP_TBLbDeleteData = False
-    Call mTRSP.SP_SHOWbMessage(Err.Description, Critical)
+    Call SP_SHOWbMessage(Err.Description, Critical)
 End Function
 Private Function SP_DATbCheckValidate() As Boolean
     
@@ -722,7 +713,7 @@ Private Function SP_DATbCheckValidate() As Boolean
     bValid = True
     'if key blank then ask for input or create new automatically
     If Trim(Me.otbFTCstCode.Text) = "" Then
-        bValid = mTRSP.SP_SHOWbMessage(mTRMS.tMS_TRConfirmCreateNewCode, Question)
+        bValid = SP_SHOWbMessage(mTRMS.tMS_0006, Question)
         If Not bValid Then Exit Function
     End If
     'begin check validation data
@@ -732,41 +723,41 @@ Private Function SP_DATbCheckValidate() As Boolean
     tMsg = ""
     
     If Trim(Me.otbFTCstName.Text) = "" Then
-        tMsg = tMsg & Split(mTRMS.tMS_TRWarnCustNotEnter, ";")(mTRVB.oVB_TRCurrentLang) & vbCrLf
+        tMsg = tMsg & Split(mTRMS.tMS_0013, ";")(mTRVB.eVB_TRLang) & vbCrLf
     End If
     
     If Trim(Me.otbFTCstAddress.Text) = "" Then
-        tMsg = tMsg & Split(mTRMS.tMS_TRWarnCustAddrNotEnter, ";")(mTRVB.oVB_TRCurrentLang) & vbCrLf
+        tMsg = tMsg & Split(mTRMS.tMS_0014, ";")(mTRVB.eVB_TRLang) & vbCrLf
     End If
     
     If Trim(Me.otbFTCstTel.Text) = "" Then
-        tMsg = tMsg & Split(mTRMS.tMS_TRWarnCustTelNotEnter, ";")(mTRVB.oVB_TRCurrentLang) & vbCrLf
+        tMsg = tMsg & Split(mTRMS.tMS_0015, ";")(mTRVB.eVB_TRLang) & vbCrLf
     Else
         If IsNumeric(Me.otbFTCstTel) = False Then
-            tMsg = tMsg & Split(mTRMS.tMS_TRWarnCustTelMustNumber, ";")(mTRVB.oVB_TRCurrentLang) & vbCrLf
+            tMsg = tMsg & Split(mTRMS.tMS_0016, ";")(mTRVB.eVB_TRLang) & vbCrLf
         End If
     End If
     
     If Trim(Me.otbFTCstFax.Text) = "" Then
-        tMsg = tMsg & Split(mTRMS.tMS_TRWarnCustFaxNotEnter, ";")(mTRVB.oVB_TRCurrentLang) & vbCrLf
+        tMsg = tMsg & Split(mTRMS.tMS_0017, ";")(mTRVB.eVB_TRLang) & vbCrLf
     Else
         If IsNumeric(Me.otbFTCstFax) = False Then
-            tMsg = tMsg & Split(mTRMS.tMS_TRWarnCustFaxMustNumber, ";")(mTRVB.oVB_TRCurrentLang) & vbCrLf
+            tMsg = tMsg & Split(mTRMS.tMS_0018, ";")(mTRVB.eVB_TRLang) & vbCrLf
         End If
     End If
     
     If Year(Me.odtFDBirthDate.Value) = 1900 Then
-        tMsg = tMsg & Split(mTRMS.tMS_TRWarnCustBirthDateNotEnter, ";")(mTRVB.oVB_TRCurrentLang) & vbCrLf
+        tMsg = tMsg & Split(mTRMS.tMS_0019, ";")(mTRVB.eVB_TRLang) & vbCrLf
     End If
     
     If IsNumeric(Me.otbFCCreditLimit.Text) = False Then
-        tMsg = tMsg & Split(mTRMS.tMS_TRWarnCustCreditMustNumber, ";")(mTRVB.oVB_TRCurrentLang) & vbCrLf
+        tMsg = tMsg & Split(mTRMS.tMS_0020, ";")(mTRVB.eVB_TRLang) & vbCrLf
     End If
     
     If tMsg = "" Then
         bValid = True
     Else
-        Call mTRSP.SP_SHOWbMessage(tMsg, Exclamation)
+        Call SP_SHOWbMessage(tMsg, Exclamation)
     End If
     
     SP_DATbCheckValidate = bValid
@@ -774,43 +765,52 @@ Private Function SP_DATbCheckValidate() As Boolean
 End Function
 Private Function SP_TBLbSaveData() As Boolean
     On Error GoTo Err:
-    
+'----------------------------------------------------------
+'   *Puttipong 2017-09-07
+'   บันทึกข้อมูลลูกค้าลง Database
+'   Call:   -
+'
+'   Ret:    True = บันทึกสำเร็จ
+'               False = บันทึกไม่สำเร็จ
+'
+'----------------------------------------------------------
+
     Dim bSuccess As Boolean
     bSuccess = False
     '//generate new code if not input
     If otbFTCstCode.Text = "" Then
-        otbFTCstCode.Text = mTRSP.SP_GETtNewCustomer(oW_DbConn)
+        otbFTCstCode.Text = SP_GETtNewCustomer(oW_DbConn)
     End If
     '//read structure
     Dim oRec As ADODB.Recordset
-    Set oRec = oW_DbConn.Execute("SELECT * from TTRMCst WHERE (1=0)")
+    Set oRec = oW_DbConn.Execute("SELECT * FROM TTRMCst WHERE (1=0)")
     
     Dim nIdx As Integer
     Dim tVal As String
-    Dim tSQLInsertHead As String
-    Dim tSQLInsertBody As String
+    Dim tSQLColName As String
+    Dim tSQLValue As String
     Dim tSQLUpdate As String
-    '//Read data from form to SQL Command
+    '//Read data FROM form to SQL Command
     For nIdx = 0 To oRec.Fields.Count - 1
         
         tVal = SP_SQLtGetValue(oRec.Fields(nIdx).Name)
         
-        tSQLInsertHead = tSQLInsertHead & IIf(tSQLInsertHead <> "", ",", "") & oRec.Fields(nIdx).Name
-        tSQLInsertBody = tSQLInsertBody & IIf(tSQLInsertBody <> "", ",", "") & tVal
+        tSQLColName = tSQLColName & IIf(tSQLColName <> "", ",", "") & oRec.Fields(nIdx).Name
+        tSQLValue = tSQLValue & IIf(tSQLValue <> "", ",", "") & tVal
         tSQLUpdate = tSQLUpdate & IIf(tSQLUpdate <> "", ",", "") & oRec.Fields(nIdx).Name & "=" & tVal
 
     Next nIdx
     oRec.Close
     
     '//Generate SQL Command
-    tSQLInsertHead = "INSERT INTO TTRMCst (" & tSQLInsertHead & ") VALUES "
-    tSQLInsertBody = "(" & tSQLInsertBody & ")"
+    tSQLColName = "INSERT INTO TTRMCst (" & tSQLColName & ") VALUES "
+    tSQLValue = "(" & tSQLValue & ")"
     
     tSQLUpdate = Replace("UPDATE TTRMCst SET " & tSQLUpdate & " WHERE FTCstCode=?", "=?", "='" & otbFTCstCode.Text & "'")
     
     '//Try to insert first and then update if insert failed
-    If mTRSP.SP_SQLbRunCommand(oW_DbConn, tSQLInsertHead & tSQLInsertBody) = False Then
-        bSuccess = mTRSP.SP_SQLbRunCommand(oW_DbConn, tSQLUpdate)
+    If SP_SQLbRunCommand(oW_DbConn, tSQLColName & tSQLValue) = False Then
+        bSuccess = SP_SQLbRunCommand(oW_DbConn, tSQLUpdate)
     Else
         bSuccess = True
     End If
@@ -822,7 +822,7 @@ Private Function SP_TBLbSaveData() As Boolean
 Err:
 
     SP_TBLbSaveData = False
-    Call mTRSP.SP_SHOWbMessage(Err.Description, Critical)
+    Call SP_SHOWbMessage(Err.Description, Critical)
     
 End Function
 Private Function SP_TBLbUpdateData() As Boolean
@@ -830,13 +830,13 @@ Private Function SP_TBLbUpdateData() As Boolean
     On Error GoTo Err:
     '//Generate new code
     If otbFTCstCode.Text = "" Then
-        otbFTCstCode.Text = mTRSP.SP_GETtNewCustomer(oW_DbConn)
+        otbFTCstCode.Text = SP_GETtNewCustomer(oW_DbConn)
     End If
-    '//Read from Database and filter for key input
+    '//Read FROM Database and filter for key input
     Dim oRs As ADODB.Recordset
     Set oRs = SP_TBLoQueryData()
     
-    Dim oAction As EN_TRDatabaseAction
+    Dim oAction As EN_TRDbAction
     With oRs
         If .EOF = True Then
             '//if not found then set flag to insert
@@ -867,7 +867,7 @@ Private Function SP_TBLbUpdateData() As Boolean
     
     End With
     '//update for log
-    Call mTRSP.SP_SQLxSetLogTBL(oAction, "TTRMCst", "FTCstCode='" & otbFTCstCode.Text & "'", oW_DbConn)
+    Call SP_SQLxSetLogTBL(oAction, "TTRMCst", "FTCstCode='" & otbFTCstCode.Text & "'", oW_DbConn)
 
     SP_TBLbUpdateData = True
     
@@ -875,7 +875,7 @@ Private Function SP_TBLbUpdateData() As Boolean
 
 Err:
 
-    Call mTRSP.SP_SHOWbMessage(Err.Description, Critical)
+    Call SP_SHOWbMessage(Err.Description, Critical)
     SP_TBLbUpdateData = False
 
 End Function
@@ -893,7 +893,7 @@ Private Sub SP_DATxClearForm(Optional ptCode As String = "")
     Me.otbFCCstChqBal.Text = "0"
     Me.otbFCCreditLimit.Text = "0"
     Me.odtFDBirthDate.Value = Me.odtFDBirthDate.MinDate
-    Me.otbLastupdate.Text = ""
+    Me.otbLastUpdate.Text = ""
     
     Me.otbFTCstCode.Locked = False
     Me.otbFTCstCode.BackColor = vbWhite
@@ -903,64 +903,33 @@ Private Function SP_TBLoQueryData() As ADODB.Recordset
     '//Query database for current key input
     Dim oTbl As New ADODB.Recordset
     
-    Set oTbl = mTRSP.SP_TBLoGetCustomer(oW_DbConn)
+    Set oTbl = SP_TBLoGetCustomer(oW_DbConn)
     oTbl.Filter = "[FTCstCode]='" & otbFTCstCode.Text & "'"
     
     Set SP_TBLoQueryData = oTbl
     
 End Function
-Private Sub SP_DATxLoadFromGrid(pnRow As Integer)
-    '//Read from grid when user click
-    Me.otbFTCstCode.Text = "" & ogdMain.TextMatrix(pnRow, 1)
-    Me.otbFTCstName.Text = "" & ogdMain.TextMatrix(pnRow, 2)
-    Me.otbFTCstAddress.Text = "" & ogdMain.TextMatrix(pnRow, 3)
-    Me.otbFTCstTel.Text = "" & ogdMain.TextMatrix(pnRow, 4)
-    Me.otbFTCstFax.Text = "" & ogdMain.TextMatrix(pnRow, 5)
-    Me.otbFTRemark.Text = "" & ogdMain.TextMatrix(pnRow, 6)
-    Me.orbActive.Value = IIf(ogdMain.ValueMatrix(pnRow, 7) = 0, True, False)
-    Me.orbInactive.Value = IIf(ogdMain.ValueMatrix(pnRow, 7) = 0, False, True)
-    Me.olbFTCstPriceLv.ListIndex = ogdMain.ValueMatrix(pnRow, 8) - 1
-    
-    If ogdMain.TextMatrix(pnRow, 9) = "" Then
-        Me.odtFDBirthDate.Value = Me.odtFDBirthDate.MinDate
-    Else
-        Me.odtFDBirthDate.Value = CDate(ogdMain.TextMatrix(pnRow, 9))
-    End If
-    
-    Me.ocmDelete.Enabled = Me.orbInactive.Value
-    
-    Me.otbFCCreditLimit.Text = ogdMain.TextMatrix(pnRow, 10)
-    Me.otbFCCstARBal.Text = ogdMain.ValueMatrix(pnRow, 11)
-    Me.otbFCCstChqBal.Text = ogdMain.ValueMatrix(pnRow, 12)
-    Me.otbLastupdate.Text = "Last Update By " & ogdMain.TextMatrix(pnRow, 15) & " On " & ogdMain.TextMatrix(pnRow, 13) & " " & ogdMain.TextMatrix(pnRow, 14)
-    
-    Me.otbFTCstCode.Locked = True
-    Me.otbFTCstCode.BackColor = &H8000000F
-
-End Sub
-Private Sub SP_DATxLoadFromDB(ptCode As String)
+Private Sub SP_DATxLoadFROMDB()
     On Error GoTo Err:
-    
-    If Trim(ptCode) = "" Then Exit Sub
-    
-    '//Read from data when user input key
+        
+    '//Read FROM data when user input key
     Dim oTbl As ADODB.Recordset
     Set oTbl = SP_TBLoQueryData()
     
     If oTbl.EOF = True Then
     
         '//if not found then clear form and show msgbox data not found
-        Call SP_DATxClearForm(ptCode)
+        Call SP_DATxClearForm(Me.otbFTCstCode.Text)
         
         oTbl.Close
         Set oTbl = Nothing
             
-        Call mTRSP.SP_SHOWbMessage(mTRMS.tMS_TRDataNotFound, Exclamation)
+        Call SP_SHOWbMessage(mTRMS.tMS_0011, Exclamation)
     
         Exit Sub
         
     End If
-    '//if data found then read from database and put into controls
+    '//if data found then read FROM database and put into controls
     With oTbl
         Me.otbFTCstCode.Text = "" & .Fields("FTCstCode").Value
         Me.otbFTCstName.Text = "" & .Fields("FTCstName").Value
@@ -983,7 +952,7 @@ Private Sub SP_DATxLoadFromDB(ptCode As String)
         Me.otbFCCreditLimit.Text = Format(.Fields("FCCreditLimit").Value, "#0.00#")
         Me.otbFCCstARBal.Text = Format(.Fields("FCCstARBal").Value, "#0.00#")
         Me.otbFCCstChqBal.Text = Format(.Fields("FCCstChqBal").Value, "#0.00#")
-        Me.otbLastupdate.Text = "Last Update By " & .Fields("FTWhoUpd").Value & " On " & .Fields("FDDateUpd").Value & " " & .Fields("FTTimeUpd").Value
+        Me.otbLastUpdate.Text = "Last Update By " & .Fields("FTWhoUpd").Value & " On " & .Fields("FDDateUpd").Value & " " & .Fields("FTTimeUpd").Value
 
     End With
 
@@ -999,7 +968,7 @@ Err:
     If oTbl.State = 1 Then oTbl.Close
     Set oTbl = Nothing
     
-    Call mTRSP.SP_SHOWbMessage(Err.Description, Critical)
+    Call SP_SHOWbMessage(Err.Description, Critical)
     
 End Sub
 Private Sub ocmSearch_Click()
@@ -1010,32 +979,34 @@ End Sub
 Private Sub ogdMain_Click()
     
         Call ogdMain_RowColChange
+        otbFTCstName.SetFocus
             
 End Sub
 Private Sub ogdMain_RowColChange()
     
     If ogdMain.Row > 0 Then
 
-        Call SP_DATxLoadFromGrid(ogdMain.Row)
-        otbFTCstName.SetFocus
+        Me.otbFTCstCode.Text = ogdMain.TextMatrix(ogdMain.Row, 1)
+        Call SP_DATxLoadFROMDB
         
     End If
 
 End Sub
+
 Private Sub otbCliteria_GotFocus()
     
-    Call mTRSP.SP_CTLxSetFocus(Me.ActiveControl)
+    Call SP_CTLxSetFocus(Me.ActiveControl)
     
 End Sub
 Private Sub otbFCCreditLimit_GotFocus()
     
-    Call mTRSP.SP_CTLxSetFocus(Me.ActiveControl)
+    Call SP_CTLxSetFocus(Me.ActiveControl)
     
 End Sub
 Private Sub otbFTCstAddress_GotFocus()
     
     bW_CancelTab = True
-    'Call mTRSP.SP_CTLxSetFocus(Me.ActiveControl)
+    'Call SP_CTLxSetFocus(Me.ActiveControl)
     
 End Sub
 Private Sub otbFTCstAddress_LostFocus()
@@ -1045,33 +1016,35 @@ Private Sub otbFTCstAddress_LostFocus()
 End Sub
 Private Sub otbFTCstCode_GotFocus()
 
-    Call mTRSP.SP_CTLxSetFocus(Me.ActiveControl)
+    Call SP_CTLxSetFocus(Me.ActiveControl)
     
 End Sub
 Private Sub otbFTCstCode_LostFocus()
+
+        If Trim(otbFTCstCode.Text) = "" Then Exit Sub
         
-        Call SP_DATxLoadFromDB(otbFTCstCode.Text)
+        Call SP_DATxLoadFROMDB
 
 End Sub
 Private Sub otbFTCstFax_GotFocus()
     
-    Call mTRSP.SP_CTLxSetFocus(Me.ActiveControl)
+    Call SP_CTLxSetFocus(Me.ActiveControl)
 
 End Sub
 Private Sub otbFTCstName_GotFocus()
 
-    Call mTRSP.SP_CTLxSetFocus(Me.ActiveControl)
+    Call SP_CTLxSetFocus(Me.ActiveControl)
     
 End Sub
 Private Sub otbFTCstTel_GotFocus()
 
-    Call mTRSP.SP_CTLxSetFocus(Me.ActiveControl)
+    Call SP_CTLxSetFocus(Me.ActiveControl)
     
 End Sub
 Private Sub otbFTRemark_GotFocus()
     
     bW_CancelTab = True
-    'Call mTRSP.SP_CTLxSetFocus(Me.ActiveControl)
+    'Call SP_CTLxSetFocus(Me.ActiveControl)
     
 End Sub
 Private Sub otbFTRemark_LostFocus()
