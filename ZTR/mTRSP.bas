@@ -1,7 +1,18 @@
 Attribute VB_Name = "mTRSP"
 Option Explicit
 Public Sub SP_SETxVariable(ptUser As String, poDbType As EN_TRDbType, poLang As EN_TRLang, pbTestMode As Boolean)
-
+'-----------------------------------------------------------------
+'   Created by*Puttipong 2017-09-06
+'   Cmt : ใช้สำหรับกำหนดค่า Global Variabe เพื่อสร้าง Connection
+'   Call :
+'       ptUser =ชื่อ user ปัจจุบัน
+'       poDbType = Enum ประเภทของ Database ดู EN_TRDbType ประกอบ
+'       poLang = Enum ภาษาปัจจุบั ดู EN_TRLang
+'       pbTestMode = True ถ้าเป็น Database Test
+'                                 False ถ้าเป็น Database จริง
+'   Ret :
+'
+'-----------------------------------------------------------------
     tVB_TRUser = ptUser
     eVB_TRDbType = poDbType
     eVB_TRLang = poLang
@@ -14,6 +25,17 @@ Public Sub SP_SETxVariable(ptUser As String, poDbType As EN_TRDbType, poLang As 
     
 End Sub
 Public Function SP_GETtConnStr(ptUserID As String, ptPassword As String, ptServerName As String, ptDatabaseName As String) As String
+'-----------------------------------------------------------------
+'   Created by*Puttipong 2017-09-06
+'   Cmt : ใช้สำหรับสร้าง Connection จากตัวแปรที่ระบุ
+'   Call :
+'       ptUserID =ชื่อ Database User
+'       ptPassword =ชื่อ Database Password
+'       ptServerName = ชื่อ/Path ของ Database Server
+'       ptDatabaseName =ชื่อ Database
+'   Return :
+'       String เป็น Connection String
+'-----------------------------------------------------------------
     
     Dim tProvider As String
     Dim tUserID As String
@@ -56,6 +78,13 @@ Public Function SP_GETtConnStr(ptUserID As String, ptPassword As String, ptServe
     
 End Function
 Public Function SP_GEToConnTEST() As ADODB.Connection
+'-----------------------------------------------------------------
+'   Created by*Puttipong 2017-09-06
+'   Cmt : ใช้สำหรับเรียกตัวแปร Connection Test
+'   Call :
+'   Return :
+'       Connection Test (ADODB.Connection)
+'-----------------------------------------------------------------
     
     On Error GoTo ErrHandle:
     
@@ -74,6 +103,16 @@ ErrHandle:
     
 End Function
 Public Function SP_GEToData(poDbConn As ADODB.Connection, ptAliasName As String) As ADODB.Recordset
+'-----------------------------------------------------------------
+'   Created by*Puttipong 2017-09-11
+'   Cmt : ใช้สำหรับดึงข้อมูล Table จาก Database โดยใช้ตัวย่อ
+'   Call :
+'       poDbConn = Connection ที่ส่งมา
+'       ptAliasName = ตัวย่อของ Table ที่จะดึงข้อมูล
+'   Return :
+'       DataTable ของ Table ที่เลือก (ADODB.RecordSet)
+'-----------------------------------------------------------------
+
 Select Case ptAliasName
 Case "Cst"
     Set SP_GEToData = SP_GEToTbl(poDbConn, tCS_TRSQLCst)
@@ -88,6 +127,17 @@ Case Else
 End Select
 End Function
 Public Function SP_GEToTbl(poDbConn As ADODB.Connection, ptSQL As String) As ADODB.Recordset
+'-----------------------------------------------------------------
+'   Created by*Puttipong 2017-09-11
+'   Cmt :
+'        ใช้สำหรับดึงข้อมูล Table จาก Database โดยใช้คำสั่ง SQL และเปิดให้ RecordSet สามารถใช้เมธอด Update ได้
+'   Call :
+'       poDbConn = Connection ที่ส่งมา
+'       ptSQL = คำสั่ง SQL Select From Where ที่ต้องการ
+'   Return :
+'       DataTable ของ Table ที่เลือก (ADODB.RecordSet)
+'-----------------------------------------------------------------
+
     On Error GoTo ErrHandle:
     
     Dim oRs As New ADODB.Recordset
@@ -102,6 +152,16 @@ ErrHandle:
 
 End Function
 Public Function SP_EXECoSQL(poDbConn As ADODB.Connection, ptSQL As String) As ADODB.Recordset
+'-----------------------------------------------------------------
+'   Created by*Puttipong 2017-09-11
+'   Cmt : ใช้สำหรับดึงข้อมูล Table จาก Database โดยใช้คำสั่ง SQL แต่เปิดแบบ Read only
+'   Call :
+'       poDbConn = Connection ที่ส่งมา
+'       ptSQL = คำสั่ง SQL
+'   Return :
+'       DataTable ของ Table ที่เลือก (ADODB.RecordSet)
+'-----------------------------------------------------------------
+
     On Error GoTo ErrHandle:
     
     Set SP_EXECoSQL = poDbConn.Execute(ptSQL)
@@ -109,12 +169,23 @@ Public Function SP_EXECoSQL(poDbConn As ADODB.Connection, ptSQL As String) As AD
     
 ErrHandle:
 
-    Set SP_EXECoSQL = Nothing
+    Set SP_EXECoSQL = New ADODB.Recordset
 End Function
 Public Function SP_GETtNewID(poDbConn As ADODB.Connection, ptAliasName As String) As String
+'-----------------------------------------------------------------
+'   Created by*Puttipong 2017-09-11
+'   Cmt : ใช้สำหรับหาค่า Running Number ล่าสุดจากตัวย่อ Table
+'   Call :
+'       poDbConn = Connection ที่ส่งมา
+'       ptAliasName = ตัวย่อของ Table ที่จะหาข้อมูล
+'   Return :
+'       String ของ Running ที่ใส่ Format แล้ว
+'-----------------------------------------------------------------
+
 Dim oRs As ADODB.Recordset
 Select Case ptAliasName
     Case "Cst"
+    
         Set oRs = SP_EXECoSQL(poDbConn, tCS_TRSQLCstNew)
         If oRs.EOF = False Then
             SP_GETtNewID = "C-" & Format(CInt(Right(oRs.Fields(0).Value, 4)) + 1, "0000")
@@ -122,7 +193,9 @@ Select Case ptAliasName
             SP_GETtNewID = "C-0001"
         End If
         oRs.Close
+        
     Case "Spn"
+    
         Set oRs = SP_EXECoSQL(poDbConn, tCS_TRSQLSpnNew)
         If oRs.EOF = False Then
             SP_GETtNewID = "E-" & Format(CInt(Right(oRs.Fields(0).Value, 4)) + 1, "0000")
@@ -130,7 +203,9 @@ Select Case ptAliasName
             SP_GETtNewID = "E-0001"
         End If
         oRs.Close
+        
     Case "PdtGrp"
+        
         Set oRs = SP_EXECoSQL(poDbConn, tCS_TRSQLPdtGrpNew)
         If oRs.EOF = False Then
             SP_GETtNewID = Format(CInt(Right(oRs.Fields(0).Value, 4)) + 1, "000")
@@ -143,20 +218,29 @@ Case Else
 End Select
 End Function
 Public Function SP_GETtSQLDefault(poActionType As EN_TRDbAction) As String
+'-----------------------------------------------------------------
+'   Created by*Puttipong 2017-09-11
+'   Cmt : ใช้สำหรับสร้างคำสั่ง SQL Insert/Update สำหรับ Field มาตรฐานของ Ada
+'   Call :
+'       poActionType =ประเภทของคำสั่ง SQL Insert หรือ SQL Update ดู EN_TRDbAction
+'   Return :
+'       String คำสั่ง SQL ตามที่ระบุ
+'-----------------------------------------------------------------
+
 Dim tFldNme As String
 Dim tFldVal As String
 Dim tSQL As String
-
+Dim tExceptField As String
 tFldNme = ""
 tFldVal = ""
 tSQL = ""
+tExceptField = "FDDateIns,FTTimeIns,FTWhoIns"
 
 Dim oArr As Variant
 oArr = Split(mTRCS.tCS_TRDbFldDef, ",")
 
 Dim nIdx As Integer
 For nIdx = 0 To UBound(oArr)
-
     If poActionType = Insert Then
     
         If tFldNme <> "" Then tFldNme = tFldNme & ","
@@ -166,9 +250,12 @@ For nIdx = 0 To UBound(oArr)
         tFldVal = tFldVal & SP_GETtSQLDefVal("" & oArr(nIdx))
     Else
         tFldNme = oArr(nIdx)
-        tFldVal = SP_GETtSQLDefVal(tFldNme)
-        If tSQL <> "" Then tSQL = tSQL & "," & vbCrLf
-        tSQL = tSQL & tFldNme & "=" & tFldVal
+        If InStr(1, tExceptField, tFldNme) <= 0 Then
+
+            tFldVal = SP_GETtSQLDefVal(tFldNme)
+            If tSQL <> "" Then tSQL = tSQL & "," & vbCrLf
+            tSQL = tSQL & tFldNme & "=" & tFldVal
+        End If
     End If
 Next nIdx
 
@@ -180,6 +267,15 @@ SP_GETtSQLDefault = tSQL
 
 End Function
 Public Function SP_GETtSQLDefVal(ptName As String) As String
+'-----------------------------------------------------------------
+'   Created by*Puttipong 2017-09-11
+'   Cmt : ใช้สำหรับหาค่า Default ของชื่อ Field ที่ต้องการ
+'   Call :
+'       ptName = ชื่อฟิลด์ที่ระบุ
+'   Return :
+'       ค่า Default ของฟิลด์ที่ระบุในรูปแบบ Database Format แล้ว
+'-----------------------------------------------------------------
+
     '//special case field
     Select Case ptName
     Case "FDDateIns", "FDDateUpd"
@@ -193,6 +289,16 @@ Public Function SP_GETtSQLDefVal(ptName As String) As String
     End Select
 End Function
 Public Sub SP_SETxLogTbl(poAction As EN_TRDbAction, ptTableName As String, ptWhere As String, poDbConn As ADODB.Connection)
+'-----------------------------------------------------------------
+'   Created by*Puttipong 2017-09-11
+'   Cmt : ใช้สำหรับ Run คำสั่ง Update Field มาตรฐานของ Ada บน Table ที่ระบุและตาม Where Clause
+'   Call :
+'       poAction = ประเภทชองคำสั่ง SQL Insert หรือ Update ดู EN_TRDbAction
+'       ptTableName = ชื่อ Table ที่จะ Update
+'       ptWhere = คำสั่ง SQL Where Clause ของแถวที่จะ Update
+'   Return :
+'       -
+'-----------------------------------------------------------------
 
     Dim tSQL As String
     Dim tLogType As String
@@ -244,6 +350,17 @@ Public Sub SP_SETxLogTbl(poAction As EN_TRDbAction, ptTableName As String, ptWhe
 End Sub
 
 Public Function SP_SHOWbMessage(ptMsgCode As String, poMsgType As EN_TRMsgType) As Boolean
+'-----------------------------------------------------------------
+'   Created by*Puttipong 2017-09-06
+'   Cmt : ใช้สำหรับแสดงข้อมูล Message Box มาตรฐานของ Window
+'   Call :
+'       poMsgCode = รหัสของข้อความใน module MS
+'       ptMsgType = ประเภทชอง Message Type ดู EN_TRMsgType
+'                              Information,Critical ,Confirmation ใช้สำหรับ Alert แจ้งให้ทราบ
+'                              Question,Exclamation ใช้สำหรับยืนยัน
+'   Return :
+'       MsgBoxResult เช่น vbYes/vbNo/vbOk/vbCancel เป็นต้น
+'-----------------------------------------------------------------
     
     If InStr(1, ptMsgCode, ";") = 0 Then ptMsgCode = ptMsgCode & ";" & ptMsgCode
     
@@ -280,13 +397,33 @@ Public Function SP_SHOWbMessage(ptMsgCode As String, poMsgType As EN_TRMsgType) 
     
 End Function
 
-Public Sub SP_SETxCtlSelect(ByRef oCtl As Object)
-    
-    oCtl.SelStart = 0
-    oCtl.SelLength = Len(oCtl.Text)
+Public Sub SP_SETxCtlSelect(ByRef poCtl As Object)
+'-----------------------------------------------------------------
+'   Created by*Puttipong 2017-09-06
+'   Cmt : ใช้สำหรับ Highlight ข้อมูลตอน Set Focus
+'   Call :
+'       poCtl = Control ที่ต้องการ
+'
+'   Return :
+'       -
+'-----------------------------------------------------------------
+
+    poCtl.SelStart = 0
+    poCtl.SelLength = Len(poCtl.Text)
 
 End Sub
 Public Function SP_EXECbSQL(poDbConn As ADODB.Connection, ptSQLText As String) As Boolean
+'-----------------------------------------------------------------
+'   Created by*Puttipong 2017-09-11
+'   Cmt : ใช้สำหรับรันคำสั่ง SQL ที่ต้องการให้คืนค่าว่ารันสำเร็จหรือ Error เช่นพวก Insert/update/delete
+'   Call :
+'       poDbConn = Connection ที่ส่งมา
+'       ptSQLText= คำสั่ง SQL
+'   Return :
+'       True ถ้าสามารถรันผ่านได้ไม่ Error
+'       False ถ้า Error
+'-----------------------------------------------------------------
+
 On Error GoTo ErrHandle:
     
     Dim oCmd As New ADODB.Command
@@ -305,6 +442,16 @@ ErrHandle:
     
 End Function
 Public Sub SP_SETxCtlDCbo(poCbo As DataCombo, ptSQLStr As String, poDbConn As ADODB.Connection)
+'-----------------------------------------------------------------
+'   Created by*Puttipong 2017-09-11
+'   Cmt : ใช้สำหรับกำหนดค่าใน DataCombo ให้เลือก
+'   Call :
+'       poCbo = object DataCombo ที่จะกำหนดค่า
+'       ptSQLStr = คำสั่ง SQL ต้องมี Select 2 ฟิลด์อย่างต่ำ โดยเอา field ตัวแรกเป็น key ตัว field ต่อไปเป็น text
+'       poDbConn = Connection ที่ส่งมา
+'   Return :
+'       -
+'-----------------------------------------------------------------
     
     Dim oRs As ADODB.Recordset
     Set oRs = poDbConn.Execute(ptSQLStr)
@@ -316,6 +463,17 @@ Public Sub SP_SETxCtlDCbo(poCbo As DataCombo, ptSQLStr As String, poDbConn As AD
 
 End Sub
 Public Function SP_GETtSQLFormat(ptValue As String, poDataType As EN_TRDataType) As String
+'-----------------------------------------------------------------
+'   Created by*Puttipong 2017-09-06
+'   Cmt : ใช้สำหรับใส่ Format ให้ Data เพื่อนำไปใช้ในคำสั่ง SQL Insert/Update
+'   Call :
+'       ptValue = ช้อมูล
+'       poDataType = ประเภทข้อมูลที่จะแปลง ดู EN_TRDataType
+'                           เช่น Date,Text,Bool,Float,Number เป็นต้น
+'   Return :
+'       String ที่ใส่ Format ตาม SQL Database ที่ใช้อยู่แล้ว
+'-----------------------------------------------------------------
+
     On Error GoTo ErrHandle:
     Dim tStr As String
     tStr = ptValue
